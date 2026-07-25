@@ -117,7 +117,8 @@ export default {
 			disconnect: 'disconnect'
 		},
 		button: {
-			open: 'Open the selected mirror'
+			open: 'Open the selected mirror',
+			embed: 'Open in app'
 		},
 		whenEmpty: 'No device connection',
 		notify: {
@@ -153,6 +154,27 @@ export default {
 			'unknownScrcpyPathException': 'Scrcpy could not be started. Check the scrcpy path in the configuration tab, or leave it empty to use the one on your PATH',
 			'adbNotFound': '`adb` was not found. Install the Android platform tools and make sure `adb` is on your PATH'
 		}
+	},
+	mirror: {
+		connecting: 'Starting the mirror...',
+		failed: 'Could not start the mirror.\n{message}',
+		disconnected: 'The mirror stopped.\n{reason}',
+		retry: 'Try again',
+		device: 'Device',
+		view: 'View',
+		more: 'More',
+		back: 'Back',
+		home: 'Home',
+		appSwitch: 'App switcher',
+		batteryLeft: 'Left',
+		screenOff: 'Use with Screen Off',
+		clipboard: 'Clipboard',
+		notifications: 'Notifications',
+		power: 'Power',
+		volumeUp: 'Volume up',
+		volumeDown: 'Volume down',
+		menuKey: 'Menu',
+		rotate: 'Rotate'
 	},
 	titleBar: {
 		document: 'Document',

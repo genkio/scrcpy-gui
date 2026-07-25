@@ -123,7 +123,8 @@ export default {
 			disconnect: '断开连接'
 		},
 		button: {
-			open: '打开选中的镜像'
+			open: '打开选中的镜像',
+			embed: '在应用内打开'
 		},
 		whenEmpty: '暂无设备连接',
 		notify: {
@@ -159,6 +160,27 @@ export default {
 			unknownScrcpyPathException: 'scrcpy 启动失败，请检查配置中的 scrcpy 路径，或留空以使用 PATH 中的 scrcpy',
 			adbNotFound: '未找到 `adb`，请安装 Android platform-tools 并确保 `adb` 在 PATH 中'
 		}
+	},
+	mirror: {
+		connecting: '正在启动镜像...',
+		failed: '镜像启动失败\n{message}',
+		disconnected: '镜像已断开\n{reason}',
+		retry: '重试',
+		device: '设备',
+		view: '视图',
+		more: '更多',
+		back: '返回',
+		home: '主屏幕',
+		appSwitch: '任务切换',
+		batteryLeft: '剩余电量',
+		screenOff: '关闭屏幕使用',
+		clipboard: '剪贴板',
+		notifications: '通知栏',
+		power: '电源键',
+		volumeUp: '音量加',
+		volumeDown: '音量减',
+		menuKey: '菜单键',
+		rotate: '旋转屏幕'
 	},
 	titleBar: {
 		document: '帮助文档',

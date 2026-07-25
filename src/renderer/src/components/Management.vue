@@ -85,6 +85,9 @@
 				</el-table-column>
 			</el-table>
 			<div class="wrap-button">
+				<el-button v-waves type="primary" :disabled="selectedDevices.length === 0" @click.prevent="embed(selectedDevices)">
+					{{ $t('management.button.embed') }}
+				</el-button>
 				<el-button v-waves type="primary" plain :disabled="selectedDevices.length === 0" @click.prevent="open(selectedDevices)">
 					{{ $t('management.button.open') }}
 				</el-button>
@@ -200,6 +203,9 @@ export default {
 		open(devices) {
 			this.$notify.info(this.$t('management.open.loading'), 2000)
 			window.api.openScrcpy({ config: loadConfig(), devices: devices.map(({ id }) => ({ id })) })
+		},
+		embed(devices) {
+			devices.forEach(({ id, name }) => window.api.mirror.open({ id, name }))
 		},
 		async connect() {
 			if (!Regular('ip', this.ip)) {

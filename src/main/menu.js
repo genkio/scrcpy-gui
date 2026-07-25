@@ -43,6 +43,60 @@ const trayMenu = (t, locale, onSelectLocale, showWindow, hideWindow) =>
 		{ label: t('tray.exit'), role: 'quit' }
 	])
 
+const DEVICE_ITEMS = [
+	{ key: 'back', accelerator: 'Escape', action: 'nav', payload: { key: 'back' } },
+	{ key: 'home', accelerator: 'Shift+Cmd+H', action: 'nav', payload: { key: 'home' } },
+	{ key: 'appSwitch', accelerator: 'Shift+Cmd+R', action: 'nav', payload: { key: 'appSwitch' } },
+	{ type: 'separator' },
+	{ key: 'notifications', accelerator: 'CmdOrCtrl+N', action: 'notifications' },
+	{ key: 'screenOff', accelerator: 'CmdOrCtrl+O', action: 'screenOffToggle' },
+	{ key: 'clipboard', accelerator: 'CmdOrCtrl+V', action: 'paste' },
+	{ type: 'separator' },
+	{ key: 'power', accelerator: 'CmdOrCtrl+P', action: 'nav', payload: { key: 'power' } },
+	{ key: 'volumeUp', accelerator: 'CmdOrCtrl+Up', action: 'nav', payload: { key: 'volumeUp' } },
+	{ key: 'volumeDown', accelerator: 'CmdOrCtrl+Down', action: 'nav', payload: { key: 'volumeDown' } },
+	{ key: 'menuKey', accelerator: 'CmdOrCtrl+M', action: 'nav', payload: { key: 'menu' } },
+	{ key: 'rotate', accelerator: 'CmdOrCtrl+R', action: 'rotate' }
+]
+
+// A mirror window gets its own menu: the stock view/window roles would otherwise
+// eat Cmd+R, Shift+Cmd+R and Cmd+M before the device ever sees them.
+export const mirrorMenu = (locale, window) => {
+	const t = path => translate(locale, path)
+	const template = [
+		{
+			label: t('mirror.device'),
+			submenu: DEVICE_ITEMS.map(item =>
+				item.type
+					? item
+					: {
+							label: t(`mirror.${item.key}`),
+							accelerator: item.accelerator,
+							click: () =>
+								window.webContents.send('mirror:action', {
+									action: item.action,
+									payload: item.payload ?? {}
+								})
+						}
+			)
+		},
+		{
+			label: t('mirror.view'),
+			submenu: [
+				{ role: 'resetZoom' },
+				{ role: 'zoomIn' },
+				{ role: 'zoomOut' },
+				{ type: 'separator' },
+				{ role: 'togglefullscreen' },
+				{ role: 'toggleDevTools' }
+			]
+		},
+		{ role: 'help', submenu: helpItems(t) }
+	]
+	if (process.platform === 'darwin') template.unshift({ role: 'appMenu' })
+	return Menu.buildFromTemplate(template)
+}
+
 export const applyMenus = ({ locale, onSelectLocale, showWindow, hideWindow }) => {
 	const t = path => translate(locale, path)
 

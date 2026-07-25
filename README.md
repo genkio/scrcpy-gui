@@ -26,6 +26,35 @@ several times since.
 This fork rebuilds the app on a current stack, keeps the original UI, and adds a terminal-first
 install that never touches `/Applications`.
 
+## Embedded mirror
+
+**Open in app** mirrors the device inside the app itself. It pushes `scrcpy-server` to the phone
+over adb and decodes the H.264 stream in the renderer with WebCodecs, so the screen is a `<canvas>`
+and the phone frame, title bar and control sidebar are ordinary DOM. The `scrcpy` binary is not
+involved on this path.
+
+Mouse clicks, drags and the scroll wheel are forwarded as touch events, and typing goes to the
+device. The sidebar carries battery level, screen-off mirroring, clipboard paste and the three
+navigation buttons; a mirror window gets its own **Device** menu:
+
+| Shortcut | Action |
+| --- | --- |
+| `Esc` | Back |
+| `⇧⌘H` | Home |
+| `⇧⌘R` | App switcher |
+| `⌘N` | Notification shade |
+| `⌘O` | Use with screen off |
+| `⌘V` | Paste the computer clipboard into the device |
+| `⌘P` | Power |
+| `⌘↑` / `⌘↓` | Volume up / down |
+| `⌘M` | Menu |
+| `⌘R` | Rotate |
+
+Copying on the device puts the text on the computer clipboard automatically.
+
+**Open the selected mirror** still launches a real `scrcpy` window with everything from the
+Configuration tab (recording, crop, bit rate, and so on).
+
 ## Install
 
 ```sh
@@ -112,11 +141,14 @@ npm run build      # compile main, preload and renderer into out/
 
 ```
 src/
-├── main/       Electron main process: window, tray, menus, adb and scrcpy child processes
+├── main/       Electron main process: windows, tray, menus, adb, scrcpy, mirror sessions
 ├── preload/    contextBridge API exposed to the renderer as window.api
-├── renderer/   Vue 3 app
+├── renderer/   Vue 3 apps: index.html (device list) and mirror.html (embedded mirror)
 └── shared/     i18n catalogues used by both the main and renderer processes
 ```
+
+`resources/scrcpy-server` is the device-side server used by the embedded mirror. It has to match
+the protocol version supported by `@yume-chan/scrcpy`; refresh both with `npm run fetch:server`.
 
 The renderer has no Node access; every privileged call goes through the preload bridge. Device
 discovery polls `adb devices`, and mirroring spawns the `scrcpy` binary directly.

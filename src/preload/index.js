@@ -26,5 +26,14 @@ contextBridge.exposeInMainWorld('api', {
 
 	syncSettings: settings => ipcRenderer.send('settings:sync', settings),
 	openExternal: url => ipcRenderer.send('shell:open-external', url),
-	getAbout: () => ipcRenderer.invoke('app:about')
+
+	mirror: {
+		open: device => ipcRenderer.send('mirror:open', device),
+		start: options => ipcRenderer.invoke('mirror:start', options),
+		control: (action, payload) => ipcRenderer.invoke('mirror:control', { action, payload }),
+		onAction: subscribe('mirror:action'),
+		onReady: subscribe('mirror:ready'),
+		onPacket: subscribe('mirror:packet'),
+		onClosed: subscribe('mirror:closed')
+	}
 })

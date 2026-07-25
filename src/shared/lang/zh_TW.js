@@ -123,7 +123,8 @@ export default {
 			disconnect: '中斷連接'
 		},
 		button: {
-			open: '開啟選中裝置的投影'
+			open: '開啟選中裝置的投影',
+			embed: '在應用內開啟'
 		},
 		whenEmpty: '暫時沒有裝置連接',
 		notify: {
@@ -159,6 +160,27 @@ export default {
 			unknownScrcpyPathException: 'scrcpy 啟動失敗，請檢查配置中的 scrcpy 路徑，或留空以使用 PATH 中的 scrcpy',
 			adbNotFound: '找不到 `adb`，請安裝 Android platform-tools 並確認 `adb` 在 PATH 中'
 		}
+	},
+	mirror: {
+		connecting: '正在啟動投影...',
+		failed: '投影啟動失敗\n{message}',
+		disconnected: '投影已中斷\n{reason}',
+		retry: '重試',
+		device: '裝置',
+		view: '檢視',
+		more: '更多',
+		back: '返回',
+		home: '主畫面',
+		appSwitch: '切換應用',
+		batteryLeft: '剩餘電量',
+		screenOff: '關閉螢幕使用',
+		clipboard: '剪貼簿',
+		notifications: '通知欄',
+		power: '電源鍵',
+		volumeUp: '音量加',
+		volumeDown: '音量減',
+		menuKey: '選單鍵',
+		rotate: '旋轉螢幕'
 	},
 	titleBar: {
 		document: '使用說明',
