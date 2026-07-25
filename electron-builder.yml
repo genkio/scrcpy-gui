@@ -1,0 +1,50 @@
+appId: com.genkio.scrcpygui
+productName: ScrcpyGui
+copyright: Copyright © 2019 ${author}
+artifactName: ${productName}-${version}-${arch}.${ext}
+directories:
+  output: release
+  buildResources: resources
+files:
+  - out/**/*
+  - package.json
+extraResources:
+  - from: resources
+    to: .
+asar: true
+compression: maximum
+mac:
+  icon: resources/icons/icon.icns
+  category: public.app-category.utilities
+  # ad-hoc signature only: the artifacts are distributed through a homebrew tap,
+  # which curl-downloads them, so they never get a quarantine flag
+  identity: null
+  target:
+    - target: zip
+    - target: dmg
+dmg:
+  contents:
+    - x: 410
+      y: 150
+      type: link
+      path: /Applications
+    - x: 130
+      y: 150
+      type: file
+win:
+  icon: resources/icons/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  menuCategory: true
+  allowElevation: false
+linux:
+  icon: resources/icons
+  category: Utility
+  target:
+    - AppImage
+    - deb
