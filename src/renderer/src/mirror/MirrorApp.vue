@@ -1,7 +1,7 @@
 <template>
 	<div class="mirror">
 		<header class="titlebar">
-			<span class="device-name">{{ name }}</span>
+			<span class="device-name">{{ headerTitle }}</span>
 		</header>
 
 		<main class="stage">
@@ -43,11 +43,6 @@
 						</button>
 					</div>
 
-					<div class="tile static">
-						<span class="battery">{{ battery === null ? '--' : battery }}</span>
-						<span class="label">{{ $t('mirror.batteryLeft') }}</span>
-					</div>
-
 					<button class="tile" :class="{ active: screenOff }" @click="toggleScreen">
 						<svg viewBox="0 0 24 24" class="glyph">
 							<rect
@@ -65,21 +60,80 @@
 						<span class="label">{{ $t('mirror.screenOff') }}</span>
 					</button>
 
-					<button class="tile" :class="{ active: pasted }" @click="paste">
+					<button
+						class="tile"
+						:class="{ active: clipboardStatus === 'clipboardToDevice' }"
+						@click="syncClipboard('clipboardToDevice')"
+					>
 						<svg viewBox="0 0 24 24" class="glyph">
 							<rect
-								x="4"
-								y="6"
-								width="11"
-								height="13"
+								x="3"
+								y="5"
+								width="7"
+								height="14"
+								rx="1.5"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.6"
+							/>
+							<rect
+								x="15"
+								y="4"
+								width="6"
+								height="16"
 								rx="2"
 								fill="none"
 								stroke="currentColor"
 								stroke-width="1.6"
 							/>
-							<rect x="9" y="3" width="11" height="13" rx="2" fill="currentColor" />
+							<path
+								d="M8 12h9m-3-3 3 3-3 3"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
 						</svg>
-						<span class="label">{{ $t('mirror.clipboard') }}</span>
+						<span class="label">{{ $t('mirror.clipboardToDevice') }}</span>
+					</button>
+
+					<button
+						class="tile"
+						:class="{ active: clipboardStatus === 'clipboardFromDevice' }"
+						@click="syncClipboard('clipboardFromDevice')"
+					>
+						<svg viewBox="0 0 24 24" class="glyph">
+							<rect
+								x="3"
+								y="5"
+								width="7"
+								height="14"
+								rx="1.5"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.6"
+							/>
+							<rect
+								x="15"
+								y="4"
+								width="6"
+								height="16"
+								rx="2"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.6"
+							/>
+							<path
+								d="M16 12H7m3 3-3-3 3-3"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+						<span class="label">{{ $t('mirror.clipboardFromDevice') }}</span>
 					</button>
 				</div>
 
@@ -158,7 +212,7 @@ export default {
 			failed: false,
 			battery: null,
 			screenOff: false,
-			pasted: false,
+			clipboardStatus: '',
 			menuOpen: false,
 			slotSize: { width: 0, height: 0 }
 		}
@@ -168,6 +222,9 @@ export default {
 		// cannot cross the IPC boundary (structured clone rejects it)
 		menuItems() {
 			return MENU_ITEMS
+		},
+		headerTitle() {
+			return this.battery === null ? this.name : `${this.name} (${this.battery}%)`
 		},
 		// the bezel has to hug the video, so the box is measured rather than aspect-ratio'd
 		phoneStyle() {
@@ -194,6 +251,7 @@ export default {
 		this.queue = Promise.resolve()
 		this.pointerDown = false
 		this.batteryTimer = null
+		this.clipboardTimer = null
 		this.videoOrientation = null
 
 		this.offAction = window.api.mirror.onAction(({ action, payload }) =>
@@ -219,6 +277,7 @@ export default {
 		window.removeEventListener('keydown', this.onKeyDown)
 		this.observer?.disconnect()
 		clearInterval(this.batteryTimer)
+		clearTimeout(this.clipboardTimer)
 		this.offAction?.()
 		this.offReady?.()
 		this.offPacket?.()
@@ -360,11 +419,14 @@ export default {
 			this.screenOff = !this.screenOff
 			await this.control('screenOff', { off: this.screenOff })
 		},
-		async paste() {
-			await this.control('paste', {})
-			this.pasted = true
-			setTimeout(() => {
-				this.pasted = false
+		async syncClipboard(action) {
+			const result = await this.control(action)
+			if (!result?.ok) return
+
+			this.clipboardStatus = action
+			clearTimeout(this.clipboardTimer)
+			this.clipboardTimer = setTimeout(() => {
+				this.clipboardStatus = ''
 			}, 600)
 		},
 		runMenu(item) {

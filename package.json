@@ -22,7 +22,7 @@
 		"dist:mac:all": "electron-vite build && electron-builder --mac --arm64 --x64",
 		"dist:win": "electron-vite build && electron-builder --win",
 		"dist:linux": "electron-vite build && electron-builder --linux",
-		"fetch:server": "fetch-scrcpy-server 3.3.3 && cp node_modules/@yume-chan/fetch-scrcpy-server/server.bin resources/scrcpy-server"
+		"fetch:server": "./scripts/build-scrcpy-server.sh"
 	},
 	"dependencies": {
 		"@element-plus/icons-vue": "^2.3.2",
@@ -39,7 +39,6 @@
 	"devDependencies": {
 		"@swmansion/argent": "^0.17.0",
 		"@vitejs/plugin-vue": "^6.0.8",
-		"@yume-chan/fetch-scrcpy-server": "^1.0.0",
 		"electron": "^43.2.0",
 		"electron-builder": "^26.15.3",
 		"electron-vite": "^5.0.0",

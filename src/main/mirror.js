@@ -8,8 +8,11 @@ import {
 	AndroidKeyCode,
 	AndroidKeyEventAction,
 	AndroidMotionEventAction,
-	AndroidScreenPowerMode
+	AndroidScreenPowerMode,
+	ScrcpyControlMessageType,
+	ScrcpySetClipboardControlMessage
 } from '@yume-chan/scrcpy'
+import { ClipboardStream } from '@yume-chan/scrcpy/esm/3_3_1/impl/index.js'
 import { ReadableStream, WritableStream } from '@yume-chan/stream-extra'
 import { resourcesPath } from './paths'
 
@@ -44,6 +47,9 @@ export class MirrorSession {
 	#adb
 	#stopped = false
 	#tail = Promise.resolve()
+	#clipboardRequestType
+	#clipboardSetType
+	#clipboardRequest
 
 	constructor(serial, send) {
 		this.#serial = serial
@@ -69,24 +75,33 @@ export class MirrorSession {
 
 		await AdbScrcpyClient.pushServer(this.#adb, await serverStream(), DEVICE_SERVER_PATH)
 
+		const options = new AdbScrcpyOptionsLatest(
+			{
+				video: true,
+				audio: false,
+				control: true,
+				videoCodec: 'h264',
+				maxSize,
+				videoBitRate,
+				maxFps,
+				clipboardAutosync: false,
+				powerOn: true,
+				cleanup: true
+			},
+			{ version: SERVER_VERSION }
+		)
+		this.#clipboardRequestType = options.controlMessageTypes.indexOf(
+			ScrcpyControlMessageType.GetClipboard
+		)
+		this.#clipboardSetType = options.controlMessageTypes.indexOf(
+			ScrcpyControlMessageType.SetClipboard
+		)
+		const deviceClipboard = options.deviceMessageParsers.add(new ClipboardStream())
+
 		this.#client = await AdbScrcpyClient.start(
 			this.#adb,
 			DEVICE_SERVER_PATH,
-			new AdbScrcpyOptionsLatest(
-				{
-					video: true,
-					audio: false,
-					control: true,
-					videoCodec: 'h264',
-					maxSize,
-					videoBitRate,
-					maxFps,
-					clipboardAutosync: true,
-					powerOn: true,
-					cleanup: true
-				},
-				{ version: SERVER_VERSION }
-			)
+			options
 		)
 
 		this.#client.output.pipeTo(
@@ -100,11 +115,15 @@ export class MirrorSession {
 			error => this.#send('mirror:closed', { reason: String(error) })
 		)
 
-		// device copies land on the computer clipboard, matching scrcpy's autosync
-		this.#client.clipboard
-			?.pipeTo(
+		deviceClipboard
+			.pipeTo(
 				new WritableStream({
-					write: text => clipboard.writeText(text)
+					write: text => {
+						clipboard.writeText(text)
+						const request = this.#clipboardRequest
+						this.#clipboardRequest = null
+						request?.resolve()
+					}
 				})
 			)
 			.catch(() => {})
@@ -207,12 +226,50 @@ export class MirrorSession {
 		)
 	}
 
-	paste() {
+	copyClipboardToDevice() {
 		const content = clipboard.readText()
-		if (!content) return Promise.resolve()
-		return this.#serialize(() =>
-			this.#controller.setClipboard({ content, sequence: 0n, paste: true })
-		)
+		return this.#serialize(() => {
+			if (this.#clipboardSetType < 0) {
+				throw new Error('setting the device clipboard is not supported')
+			}
+			return this.#controller.write(
+				ScrcpySetClipboardControlMessage.serialize({
+					type: this.#clipboardSetType,
+					content,
+					sequence: 0n,
+					paste: false
+				})
+			)
+		})
+	}
+
+	copyClipboardFromDevice() {
+		return this.#serialize(async () => {
+			if (this.#clipboardRequestType < 0) {
+				throw new Error('device clipboard requests are not supported')
+			}
+
+			let resolve
+			let reject
+			const response = new Promise((onResolve, onReject) => {
+				resolve = onResolve
+				reject = onReject
+			})
+			const request = { resolve, reject }
+			this.#clipboardRequest = request
+			const timeout = setTimeout(() => {
+				if (this.#clipboardRequest === request) this.#clipboardRequest = null
+				reject(new Error('phone clipboard did not respond'))
+			}, 3000)
+
+			try {
+				await this.#controller.write(Uint8Array.of(this.#clipboardRequestType, 0))
+				await response
+			} finally {
+				clearTimeout(timeout)
+				if (this.#clipboardRequest === request) this.#clipboardRequest = null
+			}
+		})
 	}
 
 	expandNotifications() {
@@ -239,6 +296,8 @@ export class MirrorSession {
 
 	async stop() {
 		this.#stopped = true
+		this.#clipboardRequest?.reject(new Error('mirror stopped'))
+		this.#clipboardRequest = null
 		try {
 			await this.#client?.close()
 		} catch {

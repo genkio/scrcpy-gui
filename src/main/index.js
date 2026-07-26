@@ -352,8 +352,11 @@ ipcMain.handle('mirror:control', async (event, { action, payload }) => {
 			case 'screenOff':
 				await session.setScreenOff(payload.off)
 				break
-			case 'paste':
-				await session.paste()
+			case 'clipboardToDevice':
+				await session.copyClipboardToDevice()
+				break
+			case 'clipboardFromDevice':
+				await session.copyClipboardFromDevice()
 				break
 			case 'notifications':
 				await session.expandNotifications()

@@ -54,12 +54,26 @@ These cost real debugging time; don't rediscover them.
   would reload the window. `mirrorMenu()` in `src/main/menu.js` replaces the whole menu on focus.
 - **Tango packages are ESM-only.** They must stay in the `TANGO` exclude list in
   `electron.vite.config.mjs` so Vite bundles them; externalized they would be `require()`d and fail.
-- **scrcpy-server version is pinned.** `resources/scrcpy-server` must match the protocol version
-  `@yume-chan/scrcpy` speaks (currently 3.3.3, set in `SERVER_VERSION` in `src/main/mirror.js`).
-  Bump both together via `npm run fetch:server`. The locally installed scrcpy (4.x) is irrelevant
-  to this path.
+- **scrcpy-server version is pinned and locally patched.** `resources/scrcpy-server` must match the
+  protocol version `@yume-chan/scrcpy` speaks (currently 3.3.3, set in `SERVER_VERSION` in
+  `src/main/mirror.js`). Stock scrcpy creates its fake Android context as user 0, so clipboard reads
+  and writes silently target Owner when GrapheneOS is using another profile. `npm run fetch:server`
+  clones the matching tag, applies `patches/scrcpy-server-current-user.patch`, and builds with the
+  foreground Android user instead. It needs an Android SDK and a JDK; on this Mac the script finds
+  Android Studio's bundled JDK at `/Applications/Android Studio.app/Contents/jbr/Contents/Home` and
+  the SDK at `~/Library/Android/sdk`. Bump the server constant, build script version, and patch
+  together. The locally installed scrcpy (4.x) is irrelevant to this path.
 - **Control writes must be serialised.** The scrcpy control stream has a single writer; a drag is a
   burst of events. `MirrorSession#serialize` chains them.
+- **Explicit clipboard reads need manual Tango wiring.** Tango does not expose a get-clipboard
+  writer method and only installs its clipboard response parser when autosync is enabled, while the
+  scrcpy server deliberately does not reply to `GetClipboard` when autosync is enabled. The embedded
+  mirror disables autosync, registers the version-matched internal `ClipboardStream`, and sends the
+  two-byte request (`GetClipboard` plus `COPY_KEY_NONE`) through the controller's public `write()`
+  method. With autosync disabled, Tango's public set-clipboard method also lacks the acknowledgement
+  handler it assumes, so Mac-to-phone serializes the public `ScrcpySetClipboardControlMessage`
+  struct directly. Resolve both message types from `options.controlMessageTypes`, and set the pending
+  response before writing or a fast reply can be missed.
 - **Media play/pause is not reliable through scrcpy key injection.** On the Pixel 8a/Android 16
   setup, injecting Android keycode 85 through the scrcpy control socket returns success but PipePipe
   does not react. `MirrorSession#mediaPlayPause` deliberately uses `adb shell input keyevent 85`,
@@ -84,7 +98,9 @@ These cost real debugging time; don't rediscover them.
   skills/rules/agent files and `.argent/install.json`; keep runtime-only `.argent/environment.json`
   ignored.
 - **PATH repair.** A GUI process launched from Finder inherits a bare PATH, so `adb`/`scrcpy` are
-  invisible. `src/main/paths.js` re-adds both Homebrew prefixes; keep it working on Intel too.
+  invisible. `src/main/paths.js` re-adds both Homebrew prefixes; keep it working on Intel too. The
+  development shell on this Mac also does not expose `adb` by name; for direct device diagnostics,
+  use `~/Library/Android/sdk/platform-tools/adb`.
 - **Resources path differs when packaged.** `resourcesPath()` returns `process.resourcesPath` in a
   bundle and a relative path in dev. Always test packaged builds before releasing.
 - **scrcpy flag names.** The spawn path targets scrcpy 2.x-4.x: `--video-bit-rate`, `--no-playback`,
@@ -131,7 +147,7 @@ and shadows the released build. `rm` the symlink to fall back to the Homebrew ve
 
 ## Known gaps
 
-- Embedded mirror: clipboard paste and screen-off are implemented but never observed end to end;
-  wireless devices untested on that path; sidebar shortcut labels are hardcoded mac glyphs.
+- Embedded mirror: screen-off is implemented but never observed end to end; wireless devices are
+  untested on that path; sidebar shortcut labels are hardcoded mac glyphs.
 - `.travis.yml` and `appveyor.yml` are dead 2019 CI configs.
 - No linter since the ESLint 4 setup was dropped in the v2 rewrite.
