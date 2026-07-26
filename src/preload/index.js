@@ -23,6 +23,10 @@ contextBridge.exposeInMainWorld('api', {
 	openScrcpy: payload => ipcRenderer.send('scrcpy:open', payload),
 	connect: payload => ipcRenderer.invoke('adb:connect', payload),
 	disconnect: ip => ipcRenderer.invoke('adb:disconnect', ip),
+	listStorageProfiles: payload => ipcRenderer.invoke('storage:profiles', payload),
+	listStorage: payload => ipcRenderer.invoke('storage:list', payload),
+	downloadStorage: payload => ipcRenderer.invoke('storage:download', payload),
+	uploadStorage: payload => ipcRenderer.invoke('storage:upload', payload),
 
 	syncSettings: settings => ipcRenderer.send('settings:sync', settings),
 	openExternal: url => ipcRenderer.send('shell:open-external', url),

@@ -64,6 +64,20 @@ These cost real debugging time; don't rediscover them.
   setup, injecting Android keycode 85 through the scrcpy control socket returns success but PipePipe
   does not react. `MirrorSession#mediaPlayPause` deliberately uses `adb shell input keyevent 85`,
   which reaches the active media session.
+- **macOS does not expose Android MTP storage in Finder.** The Storage tab deliberately browses
+  `/sdcard` through `adb exec-out`, so it works independently of the phone's "Use USB for file
+  transfer" preference but still requires USB debugging. Folder listings use NUL-delimited fields;
+  do not replace this with parsing `ls`, which breaks on valid filenames.
+- **ADB always resolves `/sdcard` as Android user 0.** On Android 9 and newer, raw ADB access to
+  secondary-user storage is intentionally blocked even when that user is current. The Storage tab
+  therefore uses raw `adb push`/`pull` only for Owner, and Android's per-user
+  ExternalStorageProvider plus MediaStore for secondary profiles. A secondary profile must be
+  running and unlocked before its provider is available; switching the phone's foreground user
+  does not change ADB's `/sdcard`.
+- **A MediaStore insert does not materialize the uploaded file by itself.** Resolve the inserted
+  `content://media/external/file/<id>` row and stream the first write through that URI. Use
+  `adb shell content write` for uploads because `exec-out` does not forward stdin here; use
+  `adb exec-out content read` for binary-safe downloads.
 - **Argent's committable local install includes generated files hidden by global ignores.**
   `.agents/`, `.claude/`, and `.codex/` are globally ignored on the primary development machine,
   while `.argent/` is ignored by this repo. When refreshing Argent, force-add new generated

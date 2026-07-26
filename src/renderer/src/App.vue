@@ -10,6 +10,9 @@
 					<el-tab-pane :label="$t('dashboard.management')" name="management">
 						<management />
 					</el-tab-pane>
+					<el-tab-pane :label="$t('dashboard.storage')" name="storage">
+						<storage-browser />
+					</el-tab-pane>
 				</el-tabs>
 			</el-main>
 			<app-footer />
@@ -25,6 +28,7 @@ import AppHeader from './components/AppHeader.vue'
 import AppFooter from './components/AppFooter.vue'
 import Configuration from './components/Configuration.vue'
 import Management from './components/Management.vue'
+import StorageBrowser from './components/StorageBrowser.vue'
 import i18n, { setLocale } from './i18n'
 import { syncSettings } from './config'
 
@@ -32,7 +36,7 @@ const ELEMENT_LOCALES = { en: elementEn, zhCN: elementZhCn, zhTW: elementZhTw }
 
 export default {
 	name: 'App',
-	components: { AppHeader, AppFooter, Configuration, Management },
+	components: { AppHeader, AppFooter, Configuration, Management, StorageBrowser },
 	data() {
 		return {
 			activeTab: 'management',

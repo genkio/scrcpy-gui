@@ -11,7 +11,33 @@ export default {
 	},
 	dashboard: {
 		configuration: '投影配置',
-		management: '投影管理'
+		management: '投影管理',
+		storage: '檔案'
+	},
+	storage: {
+		selectDevice: '選擇裝置',
+		selectProfile: '選擇使用者設定檔',
+		noDevice: '連接裝置後即可瀏覽儲存空間',
+		noProfile: '找不到 Android 使用者設定檔',
+		currentProfile: '目前',
+		stoppedProfile: '已停止',
+		profileUnavailable: '請先在手機上啟動並解鎖此使用者設定檔，然後重新整理。',
+		internalStorage: '內部儲存空間',
+		refresh: '重新整理',
+		up: '返回上一層',
+		upload: '上傳',
+		download: '下載',
+		uploaded: '已上傳 {count} 個檔案',
+		downloaded: '檔案已下載',
+		replaceTitle: '取代現有檔案？',
+		replaceMessage: '手機中已存在以下檔案：{names}',
+		replace: '取代',
+		cancel: '取消',
+		folderConflict: '已有資料夾使用此名稱：{names}',
+		name: '名稱',
+		size: '大小',
+		modified: '修改時間',
+		empty: '此資料夾是空的'
 	},
 	configuration: {
 		source: {

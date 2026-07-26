@@ -5,7 +5,33 @@ export default {
 	},
 	dashboard: {
 		configuration: 'Configuration',
-		management: 'Management'
+		management: 'Management',
+		storage: 'Storage'
+	},
+	storage: {
+		selectDevice: 'Select a device',
+		selectProfile: 'Select a profile',
+		noDevice: 'Connect a device to browse its storage',
+		noProfile: 'No Android profiles found',
+		currentProfile: 'current',
+		stoppedProfile: 'stopped',
+		profileUnavailable: 'Start and unlock this profile on the phone, then refresh.',
+		internalStorage: 'Internal storage',
+		refresh: 'Refresh',
+		up: 'Up one folder',
+		upload: 'Upload',
+		download: 'Download',
+		uploaded: '{count} file uploaded | {count} files uploaded',
+		downloaded: 'File downloaded',
+		replaceTitle: 'Replace existing files?',
+		replaceMessage: 'These files already exist on the phone: {names}',
+		replace: 'Replace',
+		cancel: 'Cancel',
+		folderConflict: 'A folder already uses this file name: {names}',
+		name: 'Name',
+		size: 'Size',
+		modified: 'Modified',
+		empty: 'This folder is empty'
 	},
 	configuration: {
 		source: {

@@ -1,8 +1,17 @@
-import { app, BrowserWindow, ipcMain, Menu, screen, shell } from 'electron'
-import { join } from 'node:path'
+import { app, BrowserWindow, dialog, ipcMain, Menu, screen, shell } from 'electron'
+import { basename, join, posix } from 'node:path'
 import { version } from '../../package.json'
-import { resolveLocale } from '@shared/lang'
-import { connect, disconnect, stopWatchingDevices, watchDevices } from './adb'
+import { resolveLocale, translate } from '@shared/lang'
+import {
+	connect,
+	disconnect,
+	downloadStorageFile,
+	listStorage,
+	listStorageProfiles,
+	stopWatchingDevices,
+	uploadStorageFiles,
+	watchDevices
+} from './adb'
 import { applyMenus, destroyTray, mirrorMenu } from './menu'
 import { MirrorSession, NAV_KEYS } from './mirror'
 import { ensurePath, icon } from './paths'
@@ -209,6 +218,83 @@ app.on('will-quit', () => {
 ipcMain.on('scrcpy:open', (_event, payload) => openScrcpy(send, payload))
 ipcMain.handle('adb:connect', (_event, payload) => connect(payload))
 ipcMain.handle('adb:disconnect', (_event, ip) => disconnect(ip))
+const storageErrorMessage = error =>
+	error?.code === 'PROFILE_UNAVAILABLE'
+		? translate(locale, 'storage.profileUnavailable')
+		: (error?.message ?? String(error))
+
+ipcMain.handle('storage:profiles', async (_event, { serial }) => {
+	try {
+		return { ok: true, ...(await listStorageProfiles(serial)) }
+	} catch (error) {
+		return { ok: false, message: storageErrorMessage(error) }
+	}
+})
+ipcMain.handle('storage:list', async (_event, { serial, userId, path }) => {
+	try {
+		return { ok: true, ...(await listStorage(serial, userId, path)) }
+	} catch (error) {
+		return { ok: false, message: storageErrorMessage(error) }
+	}
+})
+ipcMain.handle('storage:download', async (event, { serial, userId, path }) => {
+	const file = posix.basename(path)
+	const { canceled, filePath } = await dialog.showSaveDialog(BrowserWindow.fromWebContents(event.sender), {
+		defaultPath: join(app.getPath('downloads'), file),
+		buttonLabel: translate(locale, 'storage.download')
+	})
+	if (canceled || !filePath) return { ok: true, canceled: true }
+
+	try {
+		await downloadStorageFile(serial, userId, path, filePath)
+		return { ok: true, filePath }
+	} catch (error) {
+		return { ok: false, message: storageErrorMessage(error) }
+	}
+})
+ipcMain.handle('storage:upload', async (event, { serial, userId, path }) => {
+	const window = BrowserWindow.fromWebContents(event.sender)
+	const { canceled, filePaths } = await dialog.showOpenDialog(window, {
+		defaultPath: app.getPath('downloads'),
+		buttonLabel: translate(locale, 'storage.upload'),
+		properties: ['openFile', 'multiSelections']
+	})
+	if (canceled || filePaths.length === 0) return { ok: true, canceled: true }
+
+	try {
+		const { entries } = await listStorage(serial, userId, path)
+		const names = filePaths.map(filePath => basename(filePath))
+		const folderConflicts = entries
+			.filter(entry => entry.directory && names.includes(entry.name))
+			.map(entry => entry.name)
+		if (folderConflicts.length) {
+			return {
+				ok: false,
+				message: translate(locale, 'storage.folderConflict').replace('{names}', folderConflicts.join(', '))
+			}
+		}
+
+		const fileConflicts = entries
+			.filter(entry => !entry.directory && names.includes(entry.name))
+			.map(entry => entry.name)
+		if (fileConflicts.length) {
+			const { response } = await dialog.showMessageBox(window, {
+				type: 'warning',
+				title: translate(locale, 'storage.replaceTitle'),
+				message: translate(locale, 'storage.replaceMessage').replace('{names}', fileConflicts.join(', ')),
+				buttons: [translate(locale, 'storage.replace'), translate(locale, 'storage.cancel')],
+				defaultId: 1,
+				cancelId: 1
+			})
+			if (response !== 0) return { ok: true, canceled: true }
+		}
+
+		await uploadStorageFiles(serial, userId, path, filePaths, fileConflicts)
+		return { ok: true, count: filePaths.length }
+	} catch (error) {
+		return { ok: false, message: storageErrorMessage(error) }
+	}
+})
 
 ipcMain.on('settings:sync', (_event, settings) => {
 	hideOnClose = Boolean(settings.hideOnClose)

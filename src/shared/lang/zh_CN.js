@@ -11,7 +11,33 @@ export default {
 	},
 	dashboard: {
 		configuration: '镜像配置',
-		management: '镜像管理'
+		management: '镜像管理',
+		storage: '文件'
+	},
+	storage: {
+		selectDevice: '选择设备',
+		selectProfile: '选择用户资料',
+		noDevice: '连接设备后即可浏览存储空间',
+		noProfile: '未找到 Android 用户资料',
+		currentProfile: '当前',
+		stoppedProfile: '已停止',
+		profileUnavailable: '请先在手机上启动并解锁此用户资料，然后刷新。',
+		internalStorage: '内部存储',
+		refresh: '刷新',
+		up: '返回上一级',
+		upload: '上传',
+		download: '下载',
+		uploaded: '已上传 {count} 个文件',
+		downloaded: '文件已下载',
+		replaceTitle: '替换现有文件？',
+		replaceMessage: '手机中已存在以下文件：{names}',
+		replace: '替换',
+		cancel: '取消',
+		folderConflict: '已有文件夹使用此名称：{names}',
+		name: '名称',
+		size: '大小',
+		modified: '修改时间',
+		empty: '此文件夹为空'
 	},
 	configuration: {
 		source: {
