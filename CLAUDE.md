@@ -104,7 +104,10 @@ Formula notes: builds are ad-hoc signed (`identity: null`), which is fine becaus
 curl-downloads and so nothing gets a quarantine flag. Homebrew stages a zip whose only entry is a
 directory *from inside* that directory, so the formula handles the bundle arriving either as
 `ScrcpyGui.app` or as its contents. `adb` comes from a cask, which a formula cannot depend on, so it
-is mentioned in caveats instead.
+is mentioned in caveats instead. Homebrew 5 tries to relocate every Mach-O file installed by a
+formula; Electron's `libEGL.dylib` and `libGLESv2.dylib` do not have enough header padding for the
+expanded Cellar path. The tap formula gives Electron's bundled dylibs short preserved `@rpath` IDs
+and re-signs the app in `post_install`; do not remove that handling.
 
 ## Local dev install
 
