@@ -172,6 +172,7 @@ export default {
 		back: '返回',
 		home: '主畫面',
 		appSwitch: '切換應用',
+		apps: '應用程式',
 		batteryLeft: '剩餘電量',
 		screenOff: '關閉螢幕使用',
 		clipboard: '剪貼簿',

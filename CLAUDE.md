@@ -64,6 +64,11 @@ These cost real debugging time; don't rediscover them.
   setup, injecting Android keycode 85 through the scrcpy control socket returns success but PipePipe
   does not react. `MirrorSession#mediaPlayPause` deliberately uses `adb shell input keyevent 85`,
   which reaches the active media session.
+- **Argent's committable local install includes generated files hidden by global ignores.**
+  `.agents/`, `.claude/`, and `.codex/` are globally ignored on the primary development machine,
+  while `.argent/` is ignored by this repo. When refreshing Argent, force-add new generated
+  skills/rules/agent files and `.argent/install.json`; keep runtime-only `.argent/environment.json`
+  ignored.
 - **PATH repair.** A GUI process launched from Finder inherits a bare PATH, so `adb`/`scrcpy` are
   invisible. `src/main/paths.js` re-adds both Homebrew prefixes; keep it working on Intel too.
 - **Resources path differs when packaged.** `resourcesPath()` returns `process.resourcesPath` in a

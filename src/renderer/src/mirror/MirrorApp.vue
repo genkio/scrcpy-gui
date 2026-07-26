@@ -105,11 +105,19 @@
 						</svg>
 						<kbd class="label">⇧⌘H</kbd>
 					</button>
-					<button class="tile" @click="nav('back')">
+					<button class="tile" @click="control('appDrawer')">
 						<svg viewBox="0 0 24 24" class="glyph">
-							<path d="M15 5 L7 12 L15 19 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+							<circle cx="6" cy="6" r="1.7" />
+							<circle cx="12" cy="6" r="1.7" />
+							<circle cx="18" cy="6" r="1.7" />
+							<circle cx="6" cy="12" r="1.7" />
+							<circle cx="12" cy="12" r="1.7" />
+							<circle cx="18" cy="12" r="1.7" />
+							<circle cx="6" cy="18" r="1.7" />
+							<circle cx="12" cy="18" r="1.7" />
+							<circle cx="18" cy="18" r="1.7" />
 						</svg>
-						<kbd class="label">ESC</kbd>
+						<span class="label">{{ $t('mirror.apps') }}</span>
 					</button>
 				</div>
 			</aside>

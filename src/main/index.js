@@ -278,6 +278,9 @@ ipcMain.handle('mirror:control', async (event, { action, payload }) => {
 			case 'mediaPlayPause':
 				await session.mediaPlayPause()
 				break
+			case 'appDrawer':
+				await session.openAppDrawer()
+				break
 			case 'battery':
 				return { ok: true, level: await session.battery() }
 			default:

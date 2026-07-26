@@ -166,6 +166,7 @@ export default {
 		back: 'Back',
 		home: 'Home',
 		appSwitch: 'App switcher',
+		apps: 'Apps',
 		batteryLeft: 'Left',
 		screenOff: 'Use with Screen Off',
 		clipboard: 'Clipboard',

@@ -227,6 +227,10 @@ export class MirrorSession {
 		return this.#adb.subprocess.noneProtocol.spawnWaitText(['input', 'keyevent', '85'])
 	}
 
+	openAppDrawer() {
+		return this.#adb.subprocess.noneProtocol.spawnWaitText(['input', 'keyevent', '284'])
+	}
+
 	async battery() {
 		const output = await this.#adb.subprocess.noneProtocol.spawnWaitText(['dumpsys', 'battery'])
 		const level = /level:\s*(\d+)/.exec(output)
