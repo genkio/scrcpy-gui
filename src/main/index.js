@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, screen, shell } from 'electron'
 import { join } from 'node:path'
 import { version } from '../../package.json'
 import { resolveLocale } from '@shared/lang'
@@ -112,6 +112,36 @@ const forwardConsole = window => {
 
 const mirrorSessions = new Map()
 
+const fitMirrorWindow = (window, { width, height }) => {
+	if (!window || window.isDestroyed() || window.isFullScreen()) return
+	if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return
+
+	const bounds = window.getBounds()
+	const videoLandscape = width > height
+	const windowLandscape = bounds.width > bounds.height
+	if (videoLandscape === windowLandscape) return
+
+	const workArea = screen.getDisplayMatching(bounds).workArea
+	const targetWidth = Math.min(bounds.height, workArea.width)
+	const targetHeight = Math.min(bounds.width, workArea.height)
+	const x = Math.max(
+		workArea.x,
+		Math.min(
+			Math.round(bounds.x + (bounds.width - targetWidth) / 2),
+			workArea.x + workArea.width - targetWidth
+		)
+	)
+	const y = Math.max(
+		workArea.y,
+		Math.min(
+			Math.round(bounds.y + (bounds.height - targetHeight) / 2),
+			workArea.y + workArea.height - targetHeight
+		)
+	)
+
+	window.setBounds({ x, y, width: targetWidth, height: targetHeight }, true)
+}
+
 const createMirrorWindow = ({ id, name }) => {
 	const window = new BrowserWindow({
 		width: 480,
@@ -190,6 +220,9 @@ ipcMain.on('shell:open-external', (_event, url) => {
 })
 
 ipcMain.on('mirror:open', (_event, device) => createMirrorWindow(device))
+ipcMain.on('mirror:fit-window', (event, size) => {
+	fitMirrorWindow(BrowserWindow.fromWebContents(event.sender), size)
+})
 
 ipcMain.handle('mirror:start', async (event, { serial, ...options }) => {
 	const key = event.sender.id
@@ -241,6 +274,9 @@ ipcMain.handle('mirror:control', async (event, { action, payload }) => {
 				break
 			case 'rotate':
 				await session.rotate()
+				break
+			case 'mediaPlayPause':
+				await session.mediaPlayPause()
 				break
 			case 'battery':
 				return { ok: true, level: await session.battery() }

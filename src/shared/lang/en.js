@@ -174,6 +174,7 @@ export default {
 		volumeUp: 'Volume up',
 		volumeDown: 'Volume down',
 		menuKey: 'Menu',
+		playPause: 'Play / pause',
 		rotate: 'Rotate'
 	},
 	titleBar: {

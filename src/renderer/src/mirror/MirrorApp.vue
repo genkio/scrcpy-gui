@@ -123,7 +123,7 @@ import {
 	WebCodecsVideoDecoder,
 	WebGLVideoFrameRenderer
 } from '@yume-chan/scrcpy-decoder-webcodecs'
-import { MotionAction, isTypingKey, keyCodeFor } from './keys'
+import { KeyCode, MotionAction, isTypingKey, keyCodeFor } from './keys'
 
 const BEZEL = 10
 
@@ -135,6 +135,7 @@ const MENU_ITEMS = [
 	{ key: 'volumeUp', action: 'nav', payload: { key: 'volumeUp' }, hint: '⌘↑' },
 	{ key: 'volumeDown', action: 'nav', payload: { key: 'volumeDown' }, hint: '⌘↓' },
 	{ key: 'menuKey', action: 'nav', payload: { key: 'menu' }, hint: '⌘M' },
+	{ key: 'playPause', action: 'mediaPlayPause', hint: 'Space' },
 	{ key: 'rotate', action: 'rotate', hint: '⌘R' }
 ]
 
@@ -185,6 +186,7 @@ export default {
 		this.queue = Promise.resolve()
 		this.pointerDown = false
 		this.batteryTimer = null
+		this.videoOrientation = null
 
 		this.offAction = window.api.mirror.onAction(({ action, payload }) =>
 			action === 'screenOffToggle' ? this.toggleScreen() : this.control(action, payload)
@@ -227,7 +229,10 @@ export default {
 		},
 		onReady({ codec, width, height }) {
 			this.teardownDecoder()
-			if (width && height) this.size = { width, height }
+			if (width && height) {
+				this.size = { width, height }
+				this.fitWindow(width, height)
+			}
 
 			const canvas = this.$refs.canvas
 			const renderer = WebGLVideoFrameRenderer.isSupported
@@ -237,6 +242,7 @@ export default {
 			this.decoder = new WebCodecsVideoDecoder({ codec, renderer })
 			this.decoder.sizeChanged(({ width: w, height: h }) => {
 				this.size = { width: w, height: h }
+				this.fitWindow(w, h)
 			})
 			this.writer = this.decoder.writable.getWriter()
 
@@ -275,6 +281,13 @@ export default {
 				console.error(`[mirror] ${action}:`, error)
 				return { ok: false }
 			}
+		},
+		fitWindow(width, height) {
+			if (width === height) return
+			const orientation = width > height ? 'landscape' : 'portrait'
+			if (orientation === this.videoOrientation) return
+			this.videoOrientation = orientation
+			window.api.mirror.fitWindow({ width, height })
 		},
 		devicePoint(event) {
 			const rect = this.$refs.canvas.getBoundingClientRect()
@@ -354,19 +367,23 @@ export default {
 			const result = await this.control('battery', {})
 			if (result?.ok) this.battery = result.level
 		},
-		// chords belong to the Device menu, this only forwards plain typing
+		// chords belong to the Device menu; Space controls media, other plain keys type
 		onKeyDown(event) {
 			if (!this.decoder || event.metaKey || event.ctrlKey) return
-
-			if (isTypingKey(event)) {
-				event.preventDefault()
-				return void this.control('text', { text: event.key })
-			}
 
 			const keyCode = keyCodeFor(event)
 			if (keyCode !== null) {
 				event.preventDefault()
-				this.control('key', { keyCode })
+				if (keyCode === KeyCode.MediaPlayPause) {
+					if (!event.repeat) this.control('mediaPlayPause')
+					return
+				}
+				return void this.control('key', { keyCode })
+			}
+
+			if (isTypingKey(event)) {
+				event.preventDefault()
+				return void this.control('text', { text: event.key })
 			}
 		}
 	}

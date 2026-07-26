@@ -60,6 +60,10 @@ These cost real debugging time; don't rediscover them.
   to this path.
 - **Control writes must be serialised.** The scrcpy control stream has a single writer; a drag is a
   burst of events. `MirrorSession#serialize` chains them.
+- **Media play/pause is not reliable through scrcpy key injection.** On the Pixel 8a/Android 16
+  setup, injecting Android keycode 85 through the scrcpy control socket returns success but PipePipe
+  does not react. `MirrorSession#mediaPlayPause` deliberately uses `adb shell input keyevent 85`,
+  which reaches the active media session.
 - **PATH repair.** A GUI process launched from Finder inherits a bare PATH, so `adb`/`scrcpy` are
   invisible. `src/main/paths.js` re-adds both Homebrew prefixes; keep it working on Intel too.
 - **Resources path differs when packaged.** `resourcesPath()` returns `process.resourcesPath` in a

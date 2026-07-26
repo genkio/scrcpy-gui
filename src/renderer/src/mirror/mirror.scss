@@ -208,3 +208,51 @@ kbd {
 	font-size: 12px;
 	color: #8a8a8a;
 }
+
+@media (orientation: landscape) {
+	.stage {
+		flex-direction: column;
+	}
+
+	.sidebar {
+		flex: 0 0 64px;
+		flex-direction: row;
+	}
+
+	.tile-group {
+		flex-direction: row;
+
+		&.nav {
+			margin-top: 0;
+			margin-left: auto;
+			padding-top: 0;
+			padding-left: 24px;
+		}
+	}
+
+	.tile {
+		width: 64px;
+		height: 64px;
+		gap: 3px;
+
+		.glyph {
+			width: 24px;
+			height: 24px;
+		}
+
+		.label {
+			font-size: 10px;
+		}
+
+		.battery {
+			font-size: 20px;
+		}
+	}
+
+	.menu {
+		top: auto;
+		right: auto;
+		bottom: 70px;
+		left: 0;
+	}
+}

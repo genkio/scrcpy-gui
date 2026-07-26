@@ -180,6 +180,7 @@ export default {
 		volumeUp: '音量加',
 		volumeDown: '音量減',
 		menuKey: '選單鍵',
+		playPause: '播放 / 暫停',
 		rotate: '旋轉螢幕'
 	},
 	titleBar: {

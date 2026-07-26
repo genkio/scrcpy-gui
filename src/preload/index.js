@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld('api', {
 		open: device => ipcRenderer.send('mirror:open', device),
 		start: options => ipcRenderer.invoke('mirror:start', options),
 		control: (action, payload) => ipcRenderer.invoke('mirror:control', { action, payload }),
+		fitWindow: size => ipcRenderer.send('mirror:fit-window', size),
 		onAction: subscribe('mirror:action'),
 		onReady: subscribe('mirror:ready'),
 		onPacket: subscribe('mirror:packet'),

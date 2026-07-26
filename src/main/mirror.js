@@ -223,6 +223,10 @@ export class MirrorSession {
 		return this.#serialize(() => this.#controller.rotateDevice())
 	}
 
+	mediaPlayPause() {
+		return this.#adb.subprocess.noneProtocol.spawnWaitText(['input', 'keyevent', '85'])
+	}
+
 	async battery() {
 		const output = await this.#adb.subprocess.noneProtocol.spawnWaitText(['dumpsys', 'battery'])
 		const level = /level:\s*(\d+)/.exec(output)
