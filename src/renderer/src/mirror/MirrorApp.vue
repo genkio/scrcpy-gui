@@ -171,7 +171,7 @@
 							<circle cx="12" cy="18" r="1.7" />
 							<circle cx="18" cy="18" r="1.7" />
 						</svg>
-						<span class="label">{{ $t('mirror.apps') }}</span>
+						<kbd class="label">⇧⌘A</kbd>
 					</button>
 				</div>
 			</aside>
@@ -255,9 +255,13 @@ export default {
 		this.clipboardTimer = null
 		this.videoOrientation = null
 
-		this.offAction = window.api.mirror.onAction(({ action, payload }) =>
-			action === 'screenOffToggle' ? this.toggleScreen() : this.control(action, payload)
-		)
+		// these two carry renderer state the menu cannot know (the toggle, the video
+		// size a swipe needs), so they go through the local methods
+		this.offAction = window.api.mirror.onAction(({ action, payload }) => {
+			if (action === 'screenOffToggle') return this.toggleScreen()
+			if (action === 'appDrawer') return this.openAppDrawer()
+			return this.control(action, payload)
+		})
 		this.offReady = window.api.mirror.onReady(this.onReady)
 		this.offPacket = window.api.mirror.onPacket(this.onPacket)
 		this.offClosed = window.api.mirror.onClosed(({ reason }) => {

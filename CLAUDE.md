@@ -83,7 +83,10 @@ These cost real debugging time; don't rediscover them.
   as default home it is dropped without a trace, while a bare `ACTION_ALL_APPS` intent still resolves
   to the stock launcher. `MirrorSession#openAppDrawer` compares the default home with the ALL_APPS
   handler for the current user, and when they differ presses HOME and injects a swipe up, which is
-  how those launchers open their own list.
+  how those launchers open their own list. Because that swipe needs the current video size, the
+  `⇧⌘A` menu entry cannot reach the session directly: menu actions arrive carrying only their static
+  payload, so `onAction` routes it through the renderer's own method, as it already does for the
+  screen-off toggle.
 - **Explicit clipboard reads need manual Tango wiring.** Tango does not expose a get-clipboard
   writer method and only installs its clipboard response parser when autosync is enabled, while the
   scrcpy server deliberately does not reply to `GetClipboard` when autosync is enabled. The embedded

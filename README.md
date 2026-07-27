@@ -42,6 +42,7 @@ navigation buttons; a mirror window gets its own **Device** menu:
 | `Esc` | Back |
 | `⇧⌘H` | Home |
 | `⇧⌘R` | App switcher |
+| `⇧⌘A` | App drawer |
 | `⌘N` | Notification shade |
 | `⌘O` | Use with screen off |
 | `⌘V` | Paste the computer clipboard into the device |

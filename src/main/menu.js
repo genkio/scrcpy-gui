@@ -47,6 +47,7 @@ const DEVICE_ITEMS = [
 	{ key: 'back', accelerator: 'Escape', action: 'nav', payload: { key: 'back' } },
 	{ key: 'home', accelerator: 'Shift+Cmd+H', action: 'nav', payload: { key: 'home' } },
 	{ key: 'appSwitch', accelerator: 'Shift+Cmd+R', action: 'nav', payload: { key: 'appSwitch' } },
+	{ key: 'apps', accelerator: 'Shift+Cmd+A', action: 'appDrawer' },
 	{ type: 'separator' },
 	{ key: 'notifications', accelerator: 'CmdOrCtrl+N', action: 'notifications' },
 	{ key: 'screenOff', accelerator: 'CmdOrCtrl+O', action: 'screenOffToggle' },
