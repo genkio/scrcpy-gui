@@ -349,6 +349,9 @@ ipcMain.handle('mirror:control', async (event, { action, payload }) => {
 			case 'text':
 				await session.text(payload.text)
 				break
+			case 'wake':
+				await session.wake()
+				break
 			case 'screenOff':
 				await session.setScreenOff(payload.off)
 				break
@@ -368,7 +371,7 @@ ipcMain.handle('mirror:control', async (event, { action, payload }) => {
 				await session.mediaPlayPause()
 				break
 			case 'appDrawer':
-				await session.openAppDrawer()
+				await session.openAppDrawer(payload)
 				break
 			case 'battery':
 				return { ok: true, level: await session.battery() }

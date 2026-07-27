@@ -53,6 +53,7 @@ const DEVICE_ITEMS = [
 	{ key: 'clipboardToDevice', accelerator: 'CmdOrCtrl+V', action: 'clipboardToDevice' },
 	{ key: 'clipboardFromDevice', action: 'clipboardFromDevice' },
 	{ type: 'separator' },
+	{ key: 'wake', accelerator: 'Shift+Cmd+P', action: 'wake' },
 	{ key: 'power', accelerator: 'CmdOrCtrl+P', action: 'nav', payload: { key: 'power' } },
 	{ key: 'volumeUp', accelerator: 'CmdOrCtrl+Up', action: 'nav', payload: { key: 'volumeUp' } },
 	{ key: 'volumeDown', accelerator: 'CmdOrCtrl+Down', action: 'nav', payload: { key: 'volumeDown' } },

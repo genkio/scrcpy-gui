@@ -197,6 +197,7 @@ export default {
 		clipboardToDevice: 'Mac → Phone',
 		clipboardFromDevice: 'Phone → Mac',
 		notifications: 'Notifications',
+		wake: 'Wake',
 		power: 'Power',
 		volumeUp: 'Volume up',
 		volumeDown: 'Volume down',

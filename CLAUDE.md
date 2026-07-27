@@ -65,6 +65,25 @@ These cost real debugging time; don't rediscover them.
   together. The locally installed scrcpy (4.x) is irrelevant to this path.
 - **Control writes must be serialised.** The scrcpy control stream has a single writer; a drag is a
   burst of events. `MirrorSession#serialize` chains them.
+- **Nothing slow may sit between a touch down and the moves after it.** Awaiting an `adb shell`
+  command (a `dumpsys power` wakefulness probe) before injecting the down event made the queued
+  moves arrive as one burst, and Android dropped them: drags silently did nothing while taps still
+  worked. Anything a gesture needs alongside it goes *after* the injection, never in front of it.
+- **A dark mirror is almost always a sleeping phone, and clicks do not wake it.** `powerOn` only
+  covers the start of the session, and injected input does not count as user activity, so the phone
+  keeps dozing on its own screen timeout while the mirror is open. `MirrorSession#touch` sends
+  `KEYCODE_WAKEUP` (224, absent from Tango's `AndroidKeyCode`) when a down event follows `WAKE_IDLE`
+  of silence, queued right behind the touch: a dozing phone drops the touch anyway, so it cannot
+  land on whatever the screen wakes up to, and an awake phone just gets its timeout pushed back.
+  The Device menu also has an explicit Wake (⇧⌘P). Note that a Pixel's always-on display renders as
+  clock, notification icons and a battery percentage at the *bottom*, which looks a lot like a
+  minimal launcher's home screen; check `mWakefulness` before believing the mirror is broken.
+- **`KEYCODE_ALL_APPS` only reaches launchers that declare an ALL_APPS activity.** Android hands the
+  key to whichever launcher is the default home, so with Olauncher (or any other minimal launcher)
+  as default home it is dropped without a trace, while a bare `ACTION_ALL_APPS` intent still resolves
+  to the stock launcher. `MirrorSession#openAppDrawer` compares the default home with the ALL_APPS
+  handler for the current user, and when they differ presses HOME and injects a swipe up, which is
+  how those launchers open their own list.
 - **Explicit clipboard reads need manual Tango wiring.** Tango does not expose a get-clipboard
   writer method and only installs its clipboard response parser when autosync is enabled, while the
   scrcpy server deliberately does not reply to `GetClipboard` when autosync is enabled. The embedded
@@ -74,8 +93,8 @@ These cost real debugging time; don't rediscover them.
   handler it assumes, so Mac-to-phone serializes the public `ScrcpySetClipboardControlMessage`
   struct directly. Resolve both message types from `options.controlMessageTypes`, and set the pending
   response before writing or a fast reply can be missed.
-- **Media play/pause is not reliable through scrcpy key injection.** On the Pixel 8a/Android 16
-  setup, injecting Android keycode 85 through the scrcpy control socket returns success but PipePipe
+- **Media play/pause is not reliable through scrcpy key injection.** On the Pixel 8a (GrapheneOS,
+  Android 16 at the time, 17 now), injecting Android keycode 85 through the scrcpy control socket returns success but PipePipe
   does not react. `MirrorSession#mediaPlayPause` deliberately uses `adb shell input keyevent 85`,
   which reaches the active media session.
 - **macOS does not expose Android MTP storage in Finder.** The Storage tab deliberately browses

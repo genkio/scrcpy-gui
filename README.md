@@ -45,6 +45,7 @@ navigation buttons; a mirror window gets its own **Device** menu:
 | `⌘N` | Notification shade |
 | `⌘O` | Use with screen off |
 | `⌘V` | Paste the computer clipboard into the device |
+| `⇧⌘P` | Wake |
 | `⌘P` | Power |
 | `⌘↑` / `⌘↓` | Volume up / down |
 | `⌘M` | Menu |

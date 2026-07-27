@@ -203,6 +203,7 @@ export default {
 		clipboardToDevice: 'Mac → 手机',
 		clipboardFromDevice: '手机 → Mac',
 		notifications: '通知栏',
+		wake: '唤醒屏幕',
 		power: '电源键',
 		volumeUp: '音量加',
 		volumeDown: '音量减',

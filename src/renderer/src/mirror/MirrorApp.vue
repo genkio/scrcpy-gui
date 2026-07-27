@@ -159,7 +159,7 @@
 						</svg>
 						<kbd class="label">⇧⌘H</kbd>
 					</button>
-					<button class="tile" @click="control('appDrawer')">
+					<button class="tile" @click="openAppDrawer">
 						<svg viewBox="0 0 24 24" class="glyph">
 							<circle cx="6" cy="6" r="1.7" />
 							<circle cx="12" cy="6" r="1.7" />
@@ -193,6 +193,7 @@ const params = new URLSearchParams(location.search)
 
 const MENU_ITEMS = [
 	{ key: 'notifications', action: 'notifications', hint: '⌘N' },
+	{ key: 'wake', action: 'wake', hint: '⇧⌘P' },
 	{ key: 'power', action: 'nav', payload: { key: 'power' }, hint: '⌘P' },
 	{ key: 'volumeUp', action: 'nav', payload: { key: 'volumeUp' }, hint: '⌘↑' },
 	{ key: 'volumeDown', action: 'nav', payload: { key: 'volumeDown' }, hint: '⌘↓' },
@@ -414,6 +415,14 @@ export default {
 		nav(key) {
 			this.menuOpen = false
 			return this.control('nav', { key })
+		},
+		// launchers without an app-drawer key are driven by a swipe, which needs the
+		// current video size
+		openAppDrawer() {
+			return this.control('appDrawer', {
+				width: this.size.width,
+				height: this.size.height
+			})
 		},
 		async toggleScreen() {
 			this.screenOff = !this.screenOff

@@ -20,6 +20,17 @@ import { resourcesPath } from './paths'
 const SERVER_VERSION = '3.3.3'
 const DEVICE_SERVER_PATH = '/data/local/tmp/scrcpy-server-scrcpygui.jar'
 
+// Tango's AndroidKeyCode stops short of the system keys
+const KEY_WAKEUP = 224
+const KEY_ALL_APPS = 284
+
+// a click landing this long after the previous input may be hitting a sleeping phone
+const WAKE_IDLE = 3000
+const HOME_SETTLE = 350
+const SWIPE = { from: 0.7, to: 0.3, steps: 12, stepMs: 18 }
+
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
+
 export const NAV_KEYS = {
 	home: AndroidKeyCode.AndroidHome,
 	back: AndroidKeyCode.AndroidBack,
@@ -50,6 +61,9 @@ export class MirrorSession {
 	#clipboardRequestType
 	#clipboardSetType
 	#clipboardRequest
+	#screenOff = false
+	#lastInput = 0
+	#allAppsKey
 
 	constructor(serial, send) {
 		this.#serial = serial
@@ -129,6 +143,7 @@ export class MirrorSession {
 			.catch(() => {})
 
 		const video = await this.#client.videoStream
+		this.#lastInput = Date.now()
 		this.#send('mirror:ready', {
 			codec: video.metadata.codec,
 			width: video.metadata.width ?? 0,
@@ -167,23 +182,45 @@ export class MirrorSession {
 		return controller
 	}
 
-	touch({ action, x, y, width, height, pressure = 1, buttons = 0 }) {
-		return this.#serialize(() =>
-			this.#controller.injectTouch({
-				action,
-				pointerId: 0n,
-				pointerX: Math.round(x),
-				pointerY: Math.round(y),
-				videoWidth: width,
-				videoHeight: height,
-				pressure: action === AndroidMotionEventAction.Up ? 0 : pressure,
-				actionButton: buttons,
-				buttons
-			})
-		)
+	// how long the phone has been left alone, which is all a click has to go on when
+	// deciding whether it may be arriving at a sleeping screen
+	#markInput() {
+		const previous = this.#lastInput
+		this.#lastInput = Date.now()
+		return this.#lastInput - previous
+	}
+
+	#injectTouch({ action, x, y, width, height, pressure = 1, buttons = 0 }) {
+		return this.#controller.injectTouch({
+			action,
+			pointerId: 0n,
+			pointerX: Math.round(x),
+			pointerY: Math.round(y),
+			videoWidth: width,
+			videoHeight: height,
+			pressure: action === AndroidMotionEventAction.Up ? 0 : pressure,
+			actionButton: buttons,
+			buttons
+		})
+	}
+
+	// A dozing phone ignores injected touches, and `powerOn` only covers the start of
+	// the session, so a click that arrives out of the blue has to wake it. The wake is
+	// queued behind the touch rather than in front of it: the sleeping phone drops the
+	// touch anyway, so it cannot land on whatever the screen wakes up to, and nothing
+	// slow ends up between the down event and the moves that follow it. An awake phone
+	// treats WAKEUP as a no-op that only pushes its screen timeout back.
+	touch(event) {
+		const idle = this.#markInput()
+		const injected = this.#serialize(() => this.#injectTouch(event))
+		const wake =
+			!this.#screenOff && idle >= WAKE_IDLE && event.action === AndroidMotionEventAction.Down
+		if (wake) this.wake()
+		return injected
 	}
 
 	scroll({ x, y, width, height, scrollX, scrollY, buttons = 0 }) {
+		this.#markInput()
 		return this.#serialize(() =>
 			this.#controller.injectScroll({
 				pointerX: Math.round(x),
@@ -197,28 +234,37 @@ export class MirrorSession {
 		)
 	}
 
-	key({ keyCode, metaState = 0, repeat = 0 }) {
-		return this.#serialize(async () => {
-			await this.#controller.injectKeyCode({
-				action: AndroidKeyEventAction.Down,
-				keyCode,
-				repeat,
-				metaState
-			})
-			await this.#controller.injectKeyCode({
-				action: AndroidKeyEventAction.Up,
-				keyCode,
-				repeat: 0,
-				metaState
-			})
+	async #injectKey({ keyCode, metaState = 0, repeat = 0 }) {
+		await this.#controller.injectKeyCode({
+			action: AndroidKeyEventAction.Down,
+			keyCode,
+			repeat,
+			metaState
+		})
+		await this.#controller.injectKeyCode({
+			action: AndroidKeyEventAction.Up,
+			keyCode,
+			repeat: 0,
+			metaState
 		})
 	}
 
+	key(event) {
+		this.#markInput()
+		return this.#serialize(() => this.#injectKey(event))
+	}
+
+	wake() {
+		return this.key({ keyCode: KEY_WAKEUP })
+	}
+
 	text(text) {
+		this.#markInput()
 		return this.#serialize(() => this.#controller.injectText(text))
 	}
 
 	setScreenOff(off) {
+		this.#screenOff = off
 		return this.#serialize(() =>
 			this.#controller.setScreenPowerMode(
 				off ? AndroidScreenPowerMode.Off : AndroidScreenPowerMode.Normal
@@ -281,15 +327,99 @@ export class MirrorSession {
 	}
 
 	mediaPlayPause() {
-		return this.#adb.subprocess.noneProtocol.spawnWaitText(['input', 'keyevent', '85'])
+		return this.#shell(['input', 'keyevent', '85'])
 	}
 
-	openAppDrawer() {
-		return this.#adb.subprocess.noneProtocol.spawnWaitText(['input', 'keyevent', '284'])
+	#shell(args) {
+		return this.#adb.subprocess.noneProtocol.spawnWaitText(args)
+	}
+
+	async #resolvePackage(user, filter) {
+		const output = await this.#shell([
+			'cmd',
+			'package',
+			'resolve-activity',
+			'--brief',
+			'--user',
+			user,
+			...filter
+		])
+		const component = output.trim().split('\n').pop().trim()
+		return component.includes('/') ? component.split('/')[0] : null
+	}
+
+	// KEYCODE_ALL_APPS is handed to whichever launcher is the default home, so it is
+	// dropped without a trace under launchers that declare no ALL_APPS activity
+	// (Olauncher and other minimal ones). Those open their list on a swipe up instead.
+	async #resolveAllAppsKey() {
+		try {
+			const user = (await this.#shell(['am', 'get-current-user'])).trim()
+			if (!/^\d+$/.test(user)) return true
+			const home = await this.#resolvePackage(user, [
+				'-a',
+				'android.intent.action.MAIN',
+				'-c',
+				'android.intent.category.HOME'
+			])
+			const allApps = await this.#resolvePackage(user, ['-a', 'android.intent.action.ALL_APPS'])
+			return !home || home === allApps
+		} catch {
+			return true
+		}
+	}
+
+	#swipeUp({ width, height } = {}) {
+		if (!width || !height) throw new Error('the video size is not known yet')
+		const x = width / 2
+		const start = SWIPE.from * height
+		const distance = (SWIPE.from - SWIPE.to) * height
+		return this.#serialize(async () => {
+			await this.#injectTouch({
+				action: AndroidMotionEventAction.Down,
+				x,
+				y: start,
+				width,
+				height,
+				buttons: 1
+			})
+			for (let step = 1; step <= SWIPE.steps; step += 1) {
+				await delay(SWIPE.stepMs)
+				await this.#injectTouch({
+					action: AndroidMotionEventAction.Move,
+					x,
+					y: start - (distance * step) / SWIPE.steps,
+					width,
+					height,
+					buttons: 1
+				})
+			}
+			await this.#injectTouch({
+				action: AndroidMotionEventAction.Up,
+				x,
+				y: SWIPE.to * height,
+				width,
+				height
+			})
+		})
+	}
+
+	async openAppDrawer(size) {
+		if (!this.#screenOff) await this.wake()
+
+		this.#allAppsKey ??= this.#resolveAllAppsKey()
+		if (await this.#allAppsKey) {
+			await this.#shell(['input', 'keyevent', String(KEY_ALL_APPS)])
+			return
+		}
+
+		// the swipe only reaches the app list from the launcher's own screen
+		await this.key({ keyCode: NAV_KEYS.home })
+		await delay(HOME_SETTLE)
+		await this.#swipeUp(size)
 	}
 
 	async battery() {
-		const output = await this.#adb.subprocess.noneProtocol.spawnWaitText(['dumpsys', 'battery'])
+		const output = await this.#shell(['dumpsys', 'battery'])
 		const level = /level:\s*(\d+)/.exec(output)
 		return level ? Number(level[1]) : null
 	}
