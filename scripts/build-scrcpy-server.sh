@@ -16,9 +16,23 @@ git clone --depth 1 --branch "v$server_version" \
 git -C "$build_root/scrcpy" apply --unidiff-zero \
 	"$project_root/patches/scrcpy-server-current-user.patch"
 
-android_studio_jdk='/Applications/Android Studio.app/Contents/jbr/Contents/Home'
-if [[ -z "${JAVA_HOME:-}" && -d "$android_studio_jdk" ]]; then
-	export JAVA_HOME="$android_studio_jdk"
+# macOS ships no JDK, and AGP needs 17+; Android Studio's bundled JBR or a Homebrew keg will do
+jdk_candidates=(
+	'/Applications/Android Studio.app/Contents/jbr/Contents/Home'
+	'/opt/homebrew/opt/openjdk@17'
+	'/usr/local/opt/openjdk@17'
+)
+if [[ -z "${JAVA_HOME:-}" ]]; then
+	for candidate in "${jdk_candidates[@]}"; do
+		[[ -x "$candidate/bin/javac" ]] || continue
+		export JAVA_HOME="$candidate"
+		break
+	done
+fi
+
+if [[ -z "${JAVA_HOME:-}" ]]; then
+	echo "no JDK found; install Android Studio or run 'brew install openjdk@17'" >&2
+	exit 1
 fi
 
 android_sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}"

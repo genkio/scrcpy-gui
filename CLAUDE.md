@@ -64,10 +64,13 @@ These cost real debugging time; don't rediscover them.
   `src/main/mirror.js`). Stock scrcpy creates its fake Android context as user 0, so clipboard reads
   and writes silently target Owner when GrapheneOS is using another profile. `npm run fetch:server`
   clones the matching tag, applies `patches/scrcpy-server-current-user.patch`, and builds with the
-  foreground Android user instead. It needs an Android SDK and a JDK; on this Mac the script finds
-  Android Studio's bundled JDK at `/Applications/Android Studio.app/Contents/jbr/Contents/Home` and
-  the SDK at `~/Library/Android/sdk`. Bump the server constant, build script version, and patch
-  together. The locally installed scrcpy (4.x) is irrelevant to this path.
+  foreground Android user instead. v3.3.3 builds with AGP 8.7.1 on Gradle 8.9, so it needs JDK 17+
+  plus `platforms;android-35` and `build-tools;35.0.0` under `~/Library/Android/sdk` (override with
+  `ANDROID_HOME`). For the JDK the script honours `JAVA_HOME`, then probes Android Studio's bundled
+  JBR and Homebrew's `openjdk@17` keg. The rebuild is not byte-reproducible across JDKs, so expect a
+  new checksum even when nothing changed; compare the dex symbols rather than the file hash. Bump the
+  server constant, build script version, and patch together. The locally installed scrcpy (4.x) is
+  irrelevant to this path.
 - **Control writes must be serialised.** The scrcpy control stream has a single writer; a drag is a
   burst of events. `MirrorSession#serialize` chains them.
 - **Nothing slow may sit between a touch down and the moves after it.** Awaiting an `adb shell`
