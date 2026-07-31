@@ -52,6 +52,11 @@ These cost real debugging time; don't rediscover them.
 - **Mirror windows need their own menu.** Electron's `viewMenu` role binds ⌘R/⇧⌘R to reload and
   `windowMenu` binds ⌘M; menu accelerators win before the page sees the key, so the mockup's ⇧⌘R
   would reload the window. `mirrorMenu()` in `src/main/menu.js` replaces the whole menu on focus.
+- **A window's `webContents` is gone inside its own `closed` handler.** `mirrorSessions` is keyed by
+  webContents id, and reading `window.webContents.id` in `closed` throws "Object has been destroyed".
+  In an `async` handler that surfaces only as an unhandled rejection, so the symptom was silent: the
+  session was never stopped and the phone kept encoding video for a window that no longer existed.
+  Capture the key when the window is created.
 - **Tango packages are ESM-only.** They must stay in the `TANGO` exclude list in
   `electron.vite.config.mjs` so Vite bundles them; externalized they would be `require()`d and fail.
 - **scrcpy-server version is pinned and locally patched.** `resources/scrcpy-server` must match the

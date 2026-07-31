@@ -176,9 +176,11 @@ const createMirrorWindow = ({ id, name }) => {
 	window.on('focus', () => Menu.setApplicationMenu(deviceMenu))
 	window.on('blur', () => refreshMenus())
 
+	// webContents is already destroyed once `closed` fires, so capture the session key up front
+	const sessionKey = window.webContents.id
 	window.on('closed', async () => {
-		const session = mirrorSessions.get(window.webContents.id)
-		mirrorSessions.delete(window.webContents.id)
+		const session = mirrorSessions.get(sessionKey)
+		mirrorSessions.delete(sessionKey)
 		await session?.stop()
 	})
 
