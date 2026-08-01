@@ -1,6 +1,6 @@
 {
 	"name": "scrcpy-gui",
-	"version": "2.4.0",
+	"version": "2.5.0",
 	"author": "SimonMa <simon@tomotoes.com>",
 	"homepage": "https://github.com/genkio/scrcpy-gui",
 	"description": "✨ A simple & beautiful GUI application for scrcpy",
