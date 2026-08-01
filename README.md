@@ -49,6 +49,7 @@ navigation buttons; a mirror window gets its own **Device** menu:
 | `⇧⌘P` | Wake |
 | `⌘P` | Power |
 | `⌘↑` / `⌘↓` | Volume up / down |
+| `⌥⌘P` | Play / pause |
 | `⌘M` | Menu |
 | `⌘R` | Rotate |
 

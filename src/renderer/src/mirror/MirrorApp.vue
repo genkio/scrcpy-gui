@@ -185,7 +185,7 @@ import {
 	WebCodecsVideoDecoder,
 	WebGLVideoFrameRenderer
 } from '@yume-chan/scrcpy-decoder-webcodecs'
-import { KeyCode, MotionAction, isTypingKey, keyCodeFor } from './keys'
+import { MotionAction, isTypingKey, keyCodeFor } from './keys'
 
 const BEZEL = 10
 
@@ -198,7 +198,7 @@ const MENU_ITEMS = [
 	{ key: 'volumeUp', action: 'nav', payload: { key: 'volumeUp' }, hint: '⌘↑' },
 	{ key: 'volumeDown', action: 'nav', payload: { key: 'volumeDown' }, hint: '⌘↓' },
 	{ key: 'menuKey', action: 'nav', payload: { key: 'menu' }, hint: '⌘M' },
-	{ key: 'playPause', action: 'mediaPlayPause', hint: 'Space' },
+	{ key: 'playPause', action: 'mediaPlayPause', hint: '⌥⌘P' },
 	{ key: 'rotate', action: 'rotate', hint: '⌘R' }
 ]
 
@@ -450,17 +450,13 @@ export default {
 			const result = await this.control('battery', {})
 			if (result?.ok) this.battery = result.level
 		},
-		// chords belong to the Device menu; Space controls media, other plain keys type
+		// chords belong to the Device menu; plain keys navigate or type
 		onKeyDown(event) {
 			if (!this.decoder || event.metaKey || event.ctrlKey) return
 
 			const keyCode = keyCodeFor(event)
 			if (keyCode !== null) {
 				event.preventDefault()
-				if (keyCode === KeyCode.MediaPlayPause) {
-					if (!event.repeat) this.control('mediaPlayPause')
-					return
-				}
 				return void this.control('key', { keyCode })
 			}
 

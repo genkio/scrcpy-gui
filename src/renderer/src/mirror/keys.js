@@ -11,7 +11,6 @@ export const KeyCode = {
 	Enter: 66,
 	Backspace: 67,
 	Menu: 82,
-	MediaPlayPause: 85,
 	PageUp: 92,
 	PageDown: 93,
 	MoveHome: 122,
@@ -24,11 +23,12 @@ export const KeyCode = {
 	AppSwitch: 187
 }
 
+// no ' ' entry: space must reach text fields as a character, so it falls through to
+// isTypingKey; media play/pause lives on the Device menu (⌥⌘P) instead
 const BROWSER_KEYS = {
 	Backspace: KeyCode.Backspace,
 	Enter: KeyCode.Enter,
 	NumpadEnter: KeyCode.Enter,
-	' ': KeyCode.MediaPlayPause,
 	Tab: KeyCode.Tab,
 	ArrowUp: KeyCode.ArrowUp,
 	ArrowDown: KeyCode.ArrowDown,

@@ -58,6 +58,7 @@ const DEVICE_ITEMS = [
 	{ key: 'power', accelerator: 'CmdOrCtrl+P', action: 'nav', payload: { key: 'power' } },
 	{ key: 'volumeUp', accelerator: 'CmdOrCtrl+Up', action: 'nav', payload: { key: 'volumeUp' } },
 	{ key: 'volumeDown', accelerator: 'CmdOrCtrl+Down', action: 'nav', payload: { key: 'volumeDown' } },
+	{ key: 'playPause', accelerator: 'Alt+Cmd+P', action: 'mediaPlayPause' },
 	{ key: 'menuKey', accelerator: 'CmdOrCtrl+M', action: 'nav', payload: { key: 'menu' } },
 	{ key: 'rotate', accelerator: 'CmdOrCtrl+R', action: 'rotate' }
 ]
