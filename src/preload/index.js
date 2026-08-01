@@ -28,6 +28,10 @@ contextBridge.exposeInMainWorld('api', {
 	downloadStorage: payload => ipcRenderer.invoke('storage:download', payload),
 	uploadStorage: payload => ipcRenderer.invoke('storage:upload', payload),
 
+	onBatteryUpdate: subscribe('battery:update'),
+	batteryStates: () => ipcRenderer.invoke('battery:states'),
+	batteryCare: payload => ipcRenderer.invoke('battery:care', payload),
+
 	syncSettings: settings => ipcRenderer.send('settings:sync', settings),
 	openExternal: url => ipcRenderer.send('shell:open-external', url),
 

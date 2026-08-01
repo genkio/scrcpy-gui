@@ -140,7 +140,14 @@ export default {
 				wireless: 'wireless'
 			},
 			operation: 'operation',
-			disconnect: 'disconnect'
+			disconnect: 'disconnect',
+			battery: 'battery care'
+		},
+		battery: {
+			tip: 'Hold the battery between {low}% and {high}% by switching USB charging off and on',
+			charging: 'Charging until {high}%',
+			paused: 'Charging paused, draining to {low}%',
+			failed: 'Could not change USB charging on {name}'
 		},
 		button: {
 			open: 'Open the selected mirror',

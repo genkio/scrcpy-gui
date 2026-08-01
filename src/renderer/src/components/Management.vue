@@ -59,7 +59,7 @@
 				<el-table-column
 					prop="method"
 					:label="$t('management.devices.method.label')"
-					width="80"
+					width="70"
 					align="center"
 					:filters="methodFilters"
 					:filter-method="filterTag"
@@ -69,6 +69,23 @@
 						<el-tag size="small" :type="scope.row.method === wired ? 'primary' : 'success'">
 							{{ scope.row.method }}
 						</el-tag>
+					</template>
+				</el-table-column>
+				<el-table-column :label="$t('management.devices.battery')" width="58" align="center">
+					<template #default="{ row }">
+						<el-tooltip :content="batteryTip(row.id)" placement="top">
+							<div class="battery-cell">
+								<el-switch
+									size="small"
+									:model-value="care(row.id).enabled === true"
+									:loading="care(row.id).busy === true"
+									@change="enabled => toggleBatteryCare(row, enabled)"
+								/>
+								<span v-if="typeof care(row.id).level === 'number'" class="battery-level">
+									{{ care(row.id).level }}%
+								</span>
+							</div>
+						</el-tooltip>
 					</template>
 				</el-table-column>
 				<el-table-column fixed="right" :label="$t('management.devices.operation')" width="90" align="center">
@@ -101,6 +118,7 @@
 
 <script>
 import { Cellphone, Position } from '@element-plus/icons-vue'
+import { PAUSE_FROM, RESUME_BELOW } from '@shared/battery'
 import EditableCell from './EditableCell.vue'
 import Regular from '../utils/regular'
 import { loadConfig } from '../config'
@@ -123,6 +141,7 @@ export default {
 			stoppedNotify: false,
 			firstLoad: true,
 			connecting: false,
+			batteryCare: {},
 			unsubscribes: []
 		}
 	},
@@ -147,8 +166,12 @@ export default {
 			window.api.onDevices(this.handleDevices),
 			window.api.onScrcpyOpened(this.handleOpened),
 			window.api.onScrcpyClosed(this.handleClosed),
+			window.api.onBatteryUpdate(this.handleBatteryUpdate),
 			window.api.onError(({ type }) => this.$notify.error(this.$t(`management.error.${type}`)))
 		]
+
+		// a reloaded renderer would otherwise show the switch off while main is still enforcing the band
+		window.api.batteryStates().then(states => states.forEach(this.handleBatteryUpdate))
 	},
 	unmounted() {
 		this.unsubscribes.forEach(unsubscribe => unsubscribe())
@@ -170,6 +193,10 @@ export default {
 			}
 
 			this.currentDevices = devices
+			// main drops the watcher when a phone goes away, so a kept entry would show a band nobody enforces
+			Object.keys(this.batteryCare)
+				.filter(serial => !devices.some(({ id }) => id === serial))
+				.forEach(serial => delete this.batteryCare[serial])
 			this.rememberWirelessDevices()
 
 			if (this.firstLoad) {
@@ -263,6 +290,30 @@ export default {
 				this.stoppedNotify = false
 			}, 1000)
 		},
+		care(id) {
+			return this.batteryCare[id] || {}
+		},
+		batteryTip(id) {
+			const { enabled, charging } = this.care(id)
+			const key = !enabled ? 'tip' : charging ? 'charging' : 'paused'
+			return this.$t(`management.battery.${key}`, { low: RESUME_BELOW, high: PAUSE_FROM })
+		},
+		handleBatteryUpdate({ serial, level, charging }) {
+			this.batteryCare[serial] = { enabled: true, busy: false, level, charging }
+		},
+		async toggleBatteryCare({ id, name }, enabled) {
+			this.batteryCare[id] = { ...this.care(id), enabled, busy: true }
+
+			const { ok, message, level, charging } = await window.api.batteryCare({ serial: id, enabled })
+
+			if (!ok) {
+				this.batteryCare[id] = { enabled: false, busy: false }
+				this.$notify.error(`${this.$t('management.battery.failed', { name })}: ${message}`)
+				return
+			}
+
+			this.batteryCare[id] = { enabled, busy: false, level, charging }
+		},
 		selectionChange(selection) {
 			this.selectedDevices = selection
 		},
@@ -306,5 +357,15 @@ export default {
 .when-empty {
 	margin: 10px auto;
 	text-align: center;
+}
+.battery-cell {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+}
+.battery-level {
+	font-size: 12px;
+	color: #666;
 }
 </style>

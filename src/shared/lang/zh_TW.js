@@ -146,7 +146,14 @@ export default {
 				wireless: '無線'
 			},
 			operation: '操作',
-			disconnect: '中斷連接'
+			disconnect: '中斷連接',
+			battery: '電池保養'
+		},
+		battery: {
+			tip: '透過開關 USB 充電，將電量維持在 {low}% 到 {high}% 之間',
+			charging: '充電至 {high}%',
+			paused: '已暫停充電，放電至 {low}%',
+			failed: '無法切換 {name} 的 USB 充電'
 		},
 		button: {
 			open: '開啟選中裝置的投影',

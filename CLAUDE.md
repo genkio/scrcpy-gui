@@ -108,6 +108,24 @@ These cost real debugging time; don't rediscover them.
   Android 16 at the time, 17 now), injecting Android keycode 85 through the scrcpy control socket returns success but PipePipe
   does not react. `MirrorSession#mediaPlayPause` deliberately uses `adb shell input keyevent 85`,
   which reaches the active media session.
+- **Battery care pauses charging by making the phone a USB power source.** The phone's Settings >
+  USB > Power options > "Charge connected device" is not a charging blocker, it is the USB-PD role
+  swap, so it reads backwards: off means the phone is a *sink* and charges, on means it is a
+  *source* and stops. `src/main/battery.js` drives the same role with
+  `dumpsys usb set-port-roles port0 <sink|source> device`, which plain `adb` (uid 2000) is allowed
+  to run. The sysfs alternatives are not: `charge_stop_level` and friends under
+  `/sys/devices/platform/google,charger/` are `system`-owned and return Permission denied, and a
+  Pixel on a production GrapheneOS build has no root. `dumpsys battery set`/`unplug` only fakes the
+  framework's reported state and does not stop the hardware, so it is useless here. Keep the data
+  role at `device` in both directions: `{source, device}` is in the port's `role_combinations`, so
+  adb survives the swap. Three gotchas. The write is asynchronous, a PD renegotiation takes a couple
+  of seconds, so reading `dumpsys usb` straight back reports the *old* role and looks inverted.
+  `power_role=` also appears once per entry in `role_combinations`, so parse it out of the `status={`
+  block, not the whole dump. And a phone left as a source never charges again, so the role must be
+  restored on toggle-off, on device loss, and on quit, the last one synchronously since `will-quit`
+  cannot await. A tick in flight is awaited before the restore, or its `source` write would land
+  after the restore and strand the phone. Sourcing power did not measurably drain the phone into a
+  MacBookPro16,2, which declines the 4.5 W the phone offers.
 - **macOS does not expose Android MTP storage in Finder.** The Storage tab deliberately browses
   `/sdcard` through `adb exec-out`, so it works independently of the phone's "Use USB for file
   transfer" preference but still requires USB debugging. Folder listings use NUL-delimited fields;
@@ -179,5 +197,8 @@ and shadows the released build. `rm` the symlink to fall back to the Homebrew ve
 
 - Embedded mirror: screen-off is implemented but never observed end to end; wireless devices are
   untested on that path; sidebar shortcut labels are hardcoded mac glyphs.
+- Battery care is deliberately session-only: it is never persisted, so quitting always hands the
+  phone back in the charging state. The 40/80 band is fixed in `src/shared/battery.js`. Its
+  resume leg was verified at the stock 80% cap, not across a real 40% to 80% cycle.
 - `.travis.yml` and `appveyor.yml` are dead 2019 CI configs.
 - No linter since the ESLint 4 setup was dropped in the v2 rewrite.

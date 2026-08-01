@@ -12,6 +12,13 @@ import {
 	uploadStorageFiles,
 	watchDevices
 } from './adb'
+import {
+	batteryCareStates,
+	pruneBatteryCare,
+	restoreChargingSync,
+	startBatteryCare,
+	stopBatteryCare
+} from './battery'
 import { applyMenus, destroyTray, mirrorMenu } from './menu'
 import { MirrorSession, NAV_KEYS } from './mirror'
 import { ensurePath, icon } from './paths'
@@ -92,7 +99,10 @@ const createWindow = () => {
 	// restart on every load so a reloaded renderer gets the current device list
 	mainWindow.webContents.on('did-finish-load', () => {
 		stopWatchingDevices()
-		watchDevices(send)
+		watchDevices((channel, payload) => {
+			if (channel === 'devices') pruneBatteryCare(payload.map(({ id }) => id))
+			send(channel, payload)
+		})
 	})
 
 	loadRenderer(mainWindow, 'index')
@@ -214,6 +224,7 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
 	stopWatchingDevices()
+	restoreChargingSync()
 	destroyTray()
 })
 
@@ -295,6 +306,22 @@ ipcMain.handle('storage:upload', async (event, { serial, userId, path }) => {
 		return { ok: true, count: filePaths.length }
 	} catch (error) {
 		return { ok: false, message: storageErrorMessage(error) }
+	}
+})
+
+ipcMain.handle('battery:states', () => batteryCareStates())
+
+ipcMain.handle('battery:care', async (_event, { serial, enabled }) => {
+	try {
+		if (!enabled) {
+			await stopBatteryCare(serial)
+			return { ok: true, charging: true, level: null }
+		}
+		return { ok: true, ...(await startBatteryCare(serial, state => send('battery:update', state))) }
+	} catch (error) {
+		// leaving the switch on would imply a band that is not actually being enforced
+		await stopBatteryCare(serial)
+		return { ok: false, message: error?.message ?? String(error) }
 	}
 })
 

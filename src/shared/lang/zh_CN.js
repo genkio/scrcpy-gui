@@ -146,7 +146,14 @@ export default {
 				wireless: '无线'
 			},
 			operation: '操作',
-			disconnect: '断开连接'
+			disconnect: '断开连接',
+			battery: '电池保养'
+		},
+		battery: {
+			tip: '通过开关 USB 充电，将电量保持在 {low}% 到 {high}% 之间',
+			charging: '充电至 {high}%',
+			paused: '已暂停充电，放电至 {low}%',
+			failed: '无法切换 {name} 的 USB 充电'
 		},
 		button: {
 			open: '打开选中的镜像',
