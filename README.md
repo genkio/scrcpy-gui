@@ -57,6 +57,27 @@ Copying on the device puts the text on the computer clipboard automatically.
 **Open the selected mirror** still launches a real `scrcpy` window with everything from the
 Configuration tab (recording, crop, bit rate, and so on).
 
+## Beyond mirroring
+
+The fork also adds a few features for a phone that lives plugged into the Mac:
+
+- **Storage.** A tab that browses the phone's internal storage and uploads/downloads files over
+  adb — macOS has no MTP support in Finder, and this path doesn't even need the phone's "Use USB
+  for file transfer" setting. Secondary Android profiles are supported.
+- **Battery care.** A per-device switch that holds the charge between 40% and 80%, which is easier
+  on the cell than pinning a permanently tethered phone at 100%. Charging is paused by swapping the
+  USB-PD power role — the same control behind Android's "Charge connected device" toggle — so it
+  works without root, and it is always restored on toggle-off, device loss, and quit.
+- **SMS forwarding.** A per-device switch that forwards new incoming texts to your iCloud address
+  as iMessages, through [cc-imessage](https://github.com/genkio/cc-imessage)
+  (`brew install genkio/tap/cc-imessage`). The gear icon in the column header runs the setup:
+  it checks the install, saves your address, and sends a test message (expect a one-time macOS
+  Automation prompt). The inbox is polled over adb every 10 seconds; plain SMS only, since RCS
+  chats are not visible to adb, and only messages arriving while the switch is on are forwarded.
+- **Replug memory.** Both switches remember what was on for each device and turn themselves back
+  on when a replugged phone reappears. The memory lasts for the app session; quitting resets
+  everything, so the phone is always handed back charging normally.
+
 ## Install
 
 ```sh
