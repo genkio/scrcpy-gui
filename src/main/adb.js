@@ -18,7 +18,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 const withPort = ip => (ip.includes(':') ? ip : `${ip}:${DEFAULT_PORT}`)
 
-const quoteShell = value => `'${value.replaceAll('\'', `'\"'\"'`)}'`
+export const quoteShell = value => `'${value.replaceAll('\'', `'\"'\"'`)}'`
 
 const normalizeUserId = userId => {
 	const normalized = Number(userId)
@@ -74,7 +74,7 @@ const ensureContentResult = ({ stdout, stderr }) => {
 	return stdout
 }
 
-const runContent = async (serial, args, options = {}) => {
+export const runContent = async (serial, args, options = {}) => {
 	const result = await run('adb', ['-s', serial, 'shell', 'content', ...args], options)
 	return ensureContentResult(result)
 }

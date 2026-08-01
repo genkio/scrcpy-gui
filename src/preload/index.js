@@ -32,6 +32,13 @@ contextBridge.exposeInMainWorld('api', {
 	batteryStates: () => ipcRenderer.invoke('battery:states'),
 	batteryCare: payload => ipcRenderer.invoke('battery:care', payload),
 
+	onForwardUpdate: subscribe('forward:update'),
+	detectForward: () => ipcRenderer.invoke('forward:detect'),
+	testForward: address => ipcRenderer.invoke('forward:test', { address }),
+	forwardStates: () => ipcRenderer.invoke('forward:states'),
+	toggleForward: payload => ipcRenderer.invoke('forward:toggle', payload),
+	syncForwardAddress: address => ipcRenderer.send('forward:address', address),
+
 	syncSettings: settings => ipcRenderer.send('settings:sync', settings),
 	openExternal: url => ipcRenderer.send('shell:open-external', url),
 

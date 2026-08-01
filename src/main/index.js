@@ -19,6 +19,15 @@ import {
 	startBatteryCare,
 	stopBatteryCare
 } from './battery'
+import {
+	forwardStates,
+	pruneForwarding,
+	startForwarding,
+	stopForwarding,
+	stopForwardingSync,
+	updateForwardAddress
+} from './forward'
+import { detectCcImessage, sendTestMessage } from './imessage'
 import { applyMenus, destroyTray, mirrorMenu } from './menu'
 import { MirrorSession, NAV_KEYS } from './mirror'
 import { ensurePath, icon } from './paths'
@@ -59,9 +68,11 @@ const refreshMenus = () => applyMenus({ locale, onSelectLocale: setLocale, showW
 
 const createWindow = () => {
 	mainWindow = new BrowserWindow({
-		width: 513,
+		// wide enough for the device table's fixed columns; below this the fixed
+		// operation column starts covering the SMS column
+		width: 580,
 		height: 800,
-		minWidth: 460,
+		minWidth: 530,
 		minHeight: 560,
 		title: 'Scrcpy',
 		center: true,
@@ -100,7 +111,11 @@ const createWindow = () => {
 	mainWindow.webContents.on('did-finish-load', () => {
 		stopWatchingDevices()
 		watchDevices((channel, payload) => {
-			if (channel === 'devices') pruneBatteryCare(payload.map(({ id }) => id))
+			if (channel === 'devices') {
+				const serials = payload.map(({ id }) => id)
+				pruneBatteryCare(serials)
+				pruneForwarding(serials)
+			}
 			send(channel, payload)
 		})
 	})
@@ -225,6 +240,7 @@ app.on('window-all-closed', () => {
 app.on('will-quit', () => {
 	stopWatchingDevices()
 	restoreChargingSync()
+	stopForwardingSync()
 	destroyTray()
 })
 
@@ -324,6 +340,30 @@ ipcMain.handle('battery:care', async (_event, { serial, enabled }) => {
 		return { ok: false, message: error?.message ?? String(error) }
 	}
 })
+
+ipcMain.handle('forward:detect', () => detectCcImessage())
+
+ipcMain.handle('forward:test', (_event, { address }) => sendTestMessage(address))
+
+ipcMain.handle('forward:states', () => forwardStates())
+
+ipcMain.handle('forward:toggle', async (_event, { serial, enabled, address, name }) => {
+	try {
+		if (!enabled) {
+			stopForwarding(serial)
+			return { ok: true }
+		}
+		// the switch is disabled until an address exists, but a stale renderer could still race this
+		if (!address) return { ok: false, message: 'no forwarding address configured' }
+		return { ok: true, ...(await startForwarding(serial, { address, name }, state => send('forward:update', state))) }
+	} catch (error) {
+		// leaving the switch on would imply forwarding that is not actually running
+		stopForwarding(serial)
+		return { ok: false, message: error?.message ?? String(error) }
+	}
+})
+
+ipcMain.on('forward:address', (_event, address) => updateForwardAddress(address))
 
 ipcMain.on('settings:sync', (_event, settings) => {
 	hideOnClose = Boolean(settings.hideOnClose)

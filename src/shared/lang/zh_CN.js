@@ -147,13 +147,37 @@ export default {
 			},
 			operation: '操作',
 			disconnect: '断开连接',
-			battery: '电池保养'
+			battery: '电池保养',
+			forward: '短信'
 		},
 		battery: {
 			tip: '通过开关 USB 充电，将电量保持在 {low}% 到 {high}% 之间',
 			charging: '充电至 {high}%',
 			paused: '已暂停充电，放电至 {low}%',
 			failed: '无法切换 {name} 的 USB 充电'
+		},
+		forward: {
+			configure: '配置短信转发',
+			missing: {
+				title: '需要安装 cc-imessage',
+				message: '短信转发通过 cc-imessage 发送。请先安装：brew install genkio/tap/cc-imessage'
+			},
+			test: {
+				title: '测试 cc-imessage？',
+				message: '将向你的地址发送一条测试 iMessage。首次发送可能会弹出 macOS 权限对话框，最长需要 30 秒。',
+				success: '测试消息已发送',
+				failed: '测试消息发送失败'
+			},
+			address: {
+				title: '转发地址',
+				message: '接收转发短信的 iCloud 地址',
+				invalid: '请输入正确的邮箱地址'
+			},
+			unconfigured: '请先配置转发地址（点击上方齿轮图标）',
+			tip: '将新收到的短信转发至 iMessage',
+			on: '正在转发至 {address}（已转发 {count} 条）',
+			error: '转发出错：{message}',
+			failed: '无法切换 {name} 的短信转发'
 		},
 		button: {
 			open: '打开选中的镜像',

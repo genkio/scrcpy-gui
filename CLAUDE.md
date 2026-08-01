@@ -126,7 +126,20 @@ These cost real debugging time; don't rediscover them.
   cannot await. A tick in flight is awaited before the restore, or its `source` write would land
   after the restore and strand the phone. Sourcing power did not measurably drain the phone into a
   MacBookPro16,2, which declines the 4.5 W the phone offers.
-- **macOS does not expose Android MTP storage in Finder.** The Storage tab deliberately browses
+- **SMS forwarding rides on cc-imessage and adb polling, and both have traps.** `src/main/forward.js`
+  polls `content query --user 0 --uri content://sms/inbox` every 10 s (shell holds READ_SMS, verified
+  on the GrapheneOS Pixel) and dedupes on the max `_id` seen; the baseline is captured on toggle-on
+  so the existing inbox is never replayed, and the cursor advances past a message even when its send
+  fails, or a permanently broken address would retry the same SMS forever. Parsing is two queries:
+  metadata (`_id:address:date`, regex-anchored on the fixed projection order) and then `body` alone
+  per id, because body is sender-controlled text and must never share a row with another field —
+  everything after `Row: 0 body=` IS the body, so there is no delimiter to spoof. On the send side
+  (`src/main/imessage.js`), without Full Disk Access `cc-imessage send` *delivers* the iMessage and
+  still exits 1, because the post-send guid lookup cannot open `chat.db`; success is therefore
+  exit 0 with `{"sent": true}` on stdout OR a nonzero exit whose stderr matches chat.db/Full Disk
+  Access. The first-ever send blocks on a macOS Automation dialog inside cc-imessage's hardcoded
+  30 s AppleScript timeout, so the execFile timeout is 45 s, and all sends are chained through one
+  promise queue since Messages.app automation is a single shared resource.
   `/sdcard` through `adb exec-out`, so it works independently of the phone's "Use USB for file
   transfer" preference but still requires USB debugging. Folder listings use NUL-delimited fields;
   do not replace this with parsing `ls`, which breaks on valid filenames.
@@ -176,7 +189,9 @@ A Pixel 8a is usually connected over USB. Useful tricks:
 4. `gh release create vX.Y.Z <the four artifacts> --title ... --notes ...`.
 5. In `../homebrew-tap`, update `Formula/scrcpy-gui.rb` (version + both URLs and hashes),
    `brew style` it, commit as `scrcpy-gui X.Y.Z`, push.
-6. Verify with `brew update && brew upgrade genkio/tap/scrcpy-gui && brew test genkio/tap/scrcpy-gui`.
+6. Verify with `brew update && brew upgrade genkio/tap/scrcpy-gui && brew test genkio/tap/scrcpy-gui`
+   (`brew install` when it is not currently installed), then `brew uninstall scrcpy-gui` so the
+   formula does not keep shadowing the dev symlink. See "Local dev install" below.
 
 Formula notes: builds are ad-hoc signed (`identity: null`), which is fine because Homebrew
 curl-downloads and so nothing gets a quarantine flag. Homebrew stages a zip whose only entry is a
@@ -189,9 +204,11 @@ and re-signs the app in `post_install`; do not remove that handling.
 
 ## Local dev install
 
-`~/.local/bin/scrcpy-gui` is a symlink to `bin/scrcpy-gui` in this checkout. `~/.local/bin` precedes
-`/opt/homebrew/bin` on PATH, so the command runs the working copy (rebuilding when sources changed)
-and shadows the released build. `rm` the symlink to fall back to the Homebrew version.
+`~/.local/bin/scrcpy-gui` is a symlink to `bin/scrcpy-gui` in this checkout, so the command runs the
+working copy, rebuilding when sources changed. Do not leave the Homebrew build installed alongside
+it: this Mac is Intel, so Homebrew's prefix is `/usr/local/bin`, which comes *before* `~/.local/bin`
+on PATH and silently shadows the dev symlink, not the other way round. `brew uninstall scrcpy-gui`
+after any formula verification, or `rm` the symlink to deliberately run the released build.
 
 ## Known gaps
 
@@ -200,5 +217,11 @@ and shadows the released build. `rm` the symlink to fall back to the Homebrew ve
 - Battery care is deliberately session-only: it is never persisted, so quitting always hands the
   phone back in the charging state. The 40/80 band is fixed in `src/shared/battery.js`. Its
   resume leg was verified at the stock 80% cap, not across a real 40% to 80% cycle.
+- SMS forwarding is session-only like battery care (only the address persists, in the renderer's
+  localStorage under `forwardAddress`), watches the Owner (user 0) inbox only, and covers real SMS
+  only — RCS never appears in `content://sms`. The config flow, toggle, baseline query, and
+  reload-resync were verified against the Pixel; an actual delivery (test send plus a real inbound
+  SMS) has not been exercised yet, and the first send still needs the one-time macOS Automation
+  grant.
 - `.travis.yml` and `appveyor.yml` are dead 2019 CI configs.
 - No linter since the ESLint 4 setup was dropped in the v2 rewrite.

@@ -141,13 +141,37 @@ export default {
 			},
 			operation: 'operation',
 			disconnect: 'disconnect',
-			battery: 'battery care'
+			battery: 'battery care',
+			forward: 'SMS'
 		},
 		battery: {
 			tip: 'Hold the battery between {low}% and {high}% by switching USB charging off and on',
 			charging: 'Charging until {high}%',
 			paused: 'Charging paused, draining to {low}%',
 			failed: 'Could not change USB charging on {name}'
+		},
+		forward: {
+			configure: 'Configure SMS forwarding',
+			missing: {
+				title: 'cc-imessage is required',
+				message: 'SMS forwarding sends through cc-imessage. Install it with: brew install genkio/tap/cc-imessage'
+			},
+			test: {
+				title: 'Test cc-imessage?',
+				message: 'A test iMessage will be sent to your address. The first send may show a macOS permission dialog and take up to 30 seconds.',
+				success: 'Test message sent',
+				failed: 'Test message failed'
+			},
+			address: {
+				title: 'Forwarding address',
+				message: 'iCloud address to forward incoming SMS to',
+				invalid: 'Enter a valid email address'
+			},
+			unconfigured: 'Configure a forwarding address first (gear icon above)',
+			tip: 'Forward new incoming SMS to iMessage',
+			on: 'Forwarding to {address} ({count} sent)',
+			error: 'Forwarding hit an error: {message}',
+			failed: 'Could not change SMS forwarding on {name}'
 		},
 		button: {
 			open: 'Open the selected mirror',

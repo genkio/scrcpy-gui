@@ -147,13 +147,37 @@ export default {
 			},
 			operation: '操作',
 			disconnect: '中斷連接',
-			battery: '電池保養'
+			battery: '電池保養',
+			forward: '簡訊'
 		},
 		battery: {
 			tip: '透過開關 USB 充電，將電量維持在 {low}% 到 {high}% 之間',
 			charging: '充電至 {high}%',
 			paused: '已暫停充電，放電至 {low}%',
 			failed: '無法切換 {name} 的 USB 充電'
+		},
+		forward: {
+			configure: '設定簡訊轉發',
+			missing: {
+				title: '需要安裝 cc-imessage',
+				message: '簡訊轉發透過 cc-imessage 傳送。請先安裝：brew install genkio/tap/cc-imessage'
+			},
+			test: {
+				title: '測試 cc-imessage？',
+				message: '將向你的地址傳送一條測試 iMessage。首次傳送可能會彈出 macOS 權限對話框，最長需要 30 秒。',
+				success: '測試訊息已傳送',
+				failed: '測試訊息傳送失敗'
+			},
+			address: {
+				title: '轉發地址',
+				message: '接收轉發簡訊的 iCloud 地址',
+				invalid: '請輸入正確的電子郵件地址'
+			},
+			unconfigured: '請先設定轉發地址（點擊上方齒輪圖示）',
+			tip: '將新收到的簡訊轉發至 iMessage',
+			on: '正在轉發至 {address}（已轉發 {count} 條）',
+			error: '轉發發生錯誤：{message}',
+			failed: '無法切換 {name} 的簡訊轉發'
 		},
 		button: {
 			open: '開啟選中裝置的投影',

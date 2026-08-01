@@ -88,6 +88,33 @@
 						</el-tooltip>
 					</template>
 				</el-table-column>
+				<el-table-column width="64" align="center">
+					<template #header>
+						<div class="forward-header">
+							<span>{{ $t('management.devices.forward') }}</span>
+							<el-tooltip :content="$t('management.forward.configure')" placement="top">
+								<el-button
+									link
+									size="small"
+									:icon="icons.Setting"
+									:loading="configuringForward"
+									@click.stop="configureForward"
+								/>
+							</el-tooltip>
+						</div>
+					</template>
+					<template #default="{ row }">
+						<el-tooltip :content="forwardTip(row.id)" placement="top">
+							<el-switch
+								size="small"
+								:model-value="forward(row.id).enabled === true"
+								:loading="forward(row.id).busy === true"
+								:disabled="forwardAddress === ''"
+								@change="enabled => toggleForward(row, enabled)"
+							/>
+						</el-tooltip>
+					</template>
+				</el-table-column>
 				<el-table-column fixed="right" :label="$t('management.devices.operation')" width="90" align="center">
 					<template #default="scope">
 						<el-button
@@ -117,7 +144,7 @@
 </template>
 
 <script>
-import { Cellphone, Position } from '@element-plus/icons-vue'
+import { Cellphone, Position, Setting } from '@element-plus/icons-vue'
 import { PAUSE_FROM, RESUME_BELOW } from '@shared/battery'
 import EditableCell from './EditableCell.vue'
 import Regular from '../utils/regular'
@@ -128,7 +155,7 @@ export default {
 	name: 'Management',
 	components: { EditableCell, Cellphone },
 	setup() {
-		return { icons: { Position } }
+		return { icons: { Position, Setting } }
 	},
 	data() {
 		return {
@@ -142,6 +169,9 @@ export default {
 			firstLoad: true,
 			connecting: false,
 			batteryCare: {},
+			forwarding: {},
+			forwardAddress: '',
+			configuringForward: false,
 			unsubscribes: []
 		}
 	},
@@ -161,17 +191,20 @@ export default {
 	},
 	created() {
 		this.wirelessDevices = store.get('wirelessDevices') || []
+		this.forwardAddress = store.get('forwardAddress') || ''
 
 		this.unsubscribes = [
 			window.api.onDevices(this.handleDevices),
 			window.api.onScrcpyOpened(this.handleOpened),
 			window.api.onScrcpyClosed(this.handleClosed),
 			window.api.onBatteryUpdate(this.handleBatteryUpdate),
+			window.api.onForwardUpdate(this.handleForwardUpdate),
 			window.api.onError(({ type }) => this.$notify.error(this.$t(`management.error.${type}`)))
 		]
 
 		// a reloaded renderer would otherwise show the switch off while main is still enforcing the band
 		window.api.batteryStates().then(states => states.forEach(this.handleBatteryUpdate))
+		window.api.forwardStates().then(states => states.forEach(this.handleForwardUpdate))
 	},
 	unmounted() {
 		this.unsubscribes.forEach(unsubscribe => unsubscribe())
@@ -193,10 +226,12 @@ export default {
 			}
 
 			this.currentDevices = devices
-			// main drops the watcher when a phone goes away, so a kept entry would show a band nobody enforces
-			Object.keys(this.batteryCare)
-				.filter(serial => !devices.some(({ id }) => id === serial))
-				.forEach(serial => delete this.batteryCare[serial])
+			// main drops the watchers when a phone goes away, so a kept entry would show a toggle nobody enforces
+			for (const state of [this.batteryCare, this.forwarding]) {
+				Object.keys(state)
+					.filter(serial => !devices.some(({ id }) => id === serial))
+					.forEach(serial => delete state[serial])
+			}
 			this.rememberWirelessDevices()
 
 			if (this.firstLoad) {
@@ -314,6 +349,79 @@ export default {
 
 			this.batteryCare[id] = { enabled, busy: false, level, charging }
 		},
+		forward(id) {
+			return this.forwarding[id] || {}
+		},
+		forwardTip(id) {
+			if (this.forwardAddress === '') return this.$t('management.forward.unconfigured')
+			const { enabled, forwarded, lastError } = this.forward(id)
+			if (!enabled) return this.$t('management.forward.tip')
+			if (lastError) return this.$t('management.forward.error', { message: lastError })
+			return this.$t('management.forward.on', { address: this.forwardAddress, count: forwarded || 0 })
+		},
+		handleForwardUpdate({ serial, forwarded, lastError }) {
+			this.forwarding[serial] = { enabled: true, busy: false, forwarded, lastError }
+		},
+		async toggleForward({ id, name }, enabled) {
+			this.forwarding[id] = { ...this.forward(id), enabled, busy: true }
+
+			const { ok, message, forwarded, lastError } = await window.api.toggleForward({
+				serial: id,
+				enabled,
+				address: this.forwardAddress,
+				name
+			})
+
+			if (!ok) {
+				this.forwarding[id] = { enabled: false, busy: false }
+				this.$notify.error(`${this.$t('management.forward.failed', { name })}: ${message}`)
+				return
+			}
+
+			this.forwarding[id] = { enabled, busy: false, forwarded, lastError }
+		},
+		async configureForward() {
+			this.configuringForward = true
+			try {
+				if (!(await window.api.detectForward())) {
+					await this.$alert(
+						this.$t('management.forward.missing.message'),
+						this.$t('management.forward.missing.title')
+					)
+					return
+				}
+
+				await this.$confirm(
+					this.$t('management.forward.test.message'),
+					this.$t('management.forward.test.title'),
+					{ type: 'info' }
+				)
+
+				const { value } = await this.$prompt(
+					this.$t('management.forward.address.message'),
+					this.$t('management.forward.address.title'),
+					{
+						inputValue: this.forwardAddress,
+						inputValidator: value => Regular('email', (value || '').trim()) || this.$t('management.forward.address.invalid')
+					}
+				)
+
+				const address = value.trim()
+				this.forwardAddress = address
+				store.put('forwardAddress', address)
+				// watchers that are already running should forward to the new address too
+				window.api.syncForwardAddress(address)
+
+				const { ok, message } = await window.api.testForward(address)
+				this.$notify[ok ? 'success' : 'error'](
+					ok ? this.$t('management.forward.test.success') : `${this.$t('management.forward.test.failed')}: ${message}`
+				)
+			} catch {
+				// one of the dialogs was dismissed
+			} finally {
+				this.configuringForward = false
+			}
+		},
 		selectionChange(selection) {
 			this.selectedDevices = selection
 		},
@@ -367,5 +475,14 @@ export default {
 .battery-level {
 	font-size: 12px;
 	color: #666;
+}
+.forward-header {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+}
+.forward-header .el-button {
+	padding: 0;
 }
 </style>
