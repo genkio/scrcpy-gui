@@ -170,6 +170,7 @@ export default {
 			connecting: false,
 			batteryCare: {},
 			forwarding: {},
+			careIntent: {},
 			forwardAddress: '',
 			configuringForward: false,
 			unsubscribes: []
@@ -203,8 +204,18 @@ export default {
 		]
 
 		// a reloaded renderer would otherwise show the switch off while main is still enforcing the band
-		window.api.batteryStates().then(states => states.forEach(this.handleBatteryUpdate))
-		window.api.forwardStates().then(states => states.forEach(this.handleForwardUpdate))
+		window.api.batteryStates().then(states =>
+			states.forEach(state => {
+				this.handleBatteryUpdate(state)
+				this.rememberIntent(state.serial, 'battery', true)
+			})
+		)
+		window.api.forwardStates().then(states =>
+			states.forEach(state => {
+				this.handleForwardUpdate(state)
+				this.rememberIntent(state.serial, 'forward', true)
+			})
+		)
 	},
 	unmounted() {
 		this.unsubscribes.forEach(unsubscribe => unsubscribe())
@@ -220,10 +231,8 @@ export default {
 					method: Regular('ip', id) ? this.wireless : this.wired
 				}))
 
-			if (loadConfig().auto) {
-				const added = devices.filter(device => !this.currentDevices.some(({ id }) => id === device.id))
-				if (added.length) this.open(added)
-			}
+			const added = devices.filter(device => !this.currentDevices.some(({ id }) => id === device.id))
+			if (loadConfig().auto && added.length) this.open(added)
 
 			this.currentDevices = devices
 			// main drops the watchers when a phone goes away, so a kept entry would show a toggle nobody enforces
@@ -232,6 +241,7 @@ export default {
 					.filter(serial => !devices.some(({ id }) => id === serial))
 					.forEach(serial => delete state[serial])
 			}
+			added.forEach(this.resumeCare)
 			this.rememberWirelessDevices()
 
 			if (this.firstLoad) {
@@ -343,11 +353,25 @@ export default {
 
 			if (!ok) {
 				this.batteryCare[id] = { enabled: false, busy: false }
+				this.rememberIntent(id, 'battery', false)
 				this.$notify.error(`${this.$t('management.battery.failed', { name })}: ${message}`)
 				return
 			}
 
 			this.batteryCare[id] = { enabled, busy: false, level, charging }
+			this.rememberIntent(id, 'battery', enabled)
+		},
+		rememberIntent(serial, feature, enabled) {
+			this.careIntent[serial] = { ...this.careIntent[serial], [feature]: enabled }
+		},
+		// a replugged phone comes back with its watchers pruned; restore what was on for it this session
+		resumeCare(device) {
+			const intent = this.careIntent[device.id]
+			if (!intent) return
+			if (intent.battery && this.care(device.id).enabled !== true) this.toggleBatteryCare(device, true)
+			if (intent.forward && this.forward(device.id).enabled !== true && this.forwardAddress !== '') {
+				this.toggleForward(device, true)
+			}
 		},
 		forward(id) {
 			return this.forwarding[id] || {}
@@ -374,11 +398,13 @@ export default {
 
 			if (!ok) {
 				this.forwarding[id] = { enabled: false, busy: false }
+				this.rememberIntent(id, 'forward', false)
 				this.$notify.error(`${this.$t('management.forward.failed', { name })}: ${message}`)
 				return
 			}
 
 			this.forwarding[id] = { enabled, busy: false, forwarded, lastError }
+			this.rememberIntent(id, 'forward', enabled)
 		},
 		async configureForward() {
 			this.configuringForward = true

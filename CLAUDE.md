@@ -223,5 +223,9 @@ after any formula verification, or `rm` the symlink to deliberately run the rele
   reload-resync were verified against the Pixel; an actual delivery (test send plus a real inbound
   SMS) has not been exercised yet, and the first send still needs the one-time macOS Automation
   grant.
+- Battery care and SMS forwarding auto re-enable when a replugged device reappears: the renderer
+  keeps a session-only per-serial intent map (`careIntent` in `Management.vue`), updated on every
+  toggle and rebuilt from the running watchers on reload. It survives unplug but deliberately not an
+  app restart, and a renderer reload while the phone is unplugged forgets the intent for it.
 - `.travis.yml` and `appveyor.yml` are dead 2019 CI configs.
 - No linter since the ESLint 4 setup was dropped in the v2 rewrite.
