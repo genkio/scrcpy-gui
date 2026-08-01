@@ -104,6 +104,12 @@ These cost real debugging time; don't rediscover them.
   handler it assumes, so Mac-to-phone serializes the public `ScrcpySetClipboardControlMessage`
   struct directly. Resolve both message types from `options.controlMessageTypes`, and set the pending
   response before writing or a fast reply can be missed.
+- **Embedded-mirror audio is raw PCM end to end.** The session asks scrcpy for `audio_codec=raw`
+  (fixed 48 kHz stereo s16le) so the renderer needs no decoder: packets go over IPC into an
+  AudioWorklet ring buffer (`pcm-worklet.js`) that drops the oldest frames on overflow, capping
+  latency at its capacity instead of drifting. Audio is best-effort — Android 10 and older report
+  `errored` and the mirror carries on video-only. Android mutes the phone's own speaker while
+  playback capture is active, so silence on the handset during a mirror is expected, not a bug.
 - **Media play/pause is not reliable through scrcpy key injection.** On the Pixel 8a (GrapheneOS,
   Android 16 at the time, 17 now), injecting Android keycode 85 through the scrcpy control socket returns success but PipePipe
   does not react. `MirrorSession#mediaPlayPause` deliberately uses `adb shell input keyevent 85`,

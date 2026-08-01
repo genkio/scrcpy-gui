@@ -34,7 +34,8 @@ and the phone frame, title bar and control sidebar are ordinary DOM. The `scrcpy
 involved on this path.
 
 Mouse clicks, drags and the scroll wheel are forwarded as touch events, and typing goes to the
-device. The sidebar carries battery level, screen-off mirroring, clipboard paste and the three
+device. Device audio plays on the Mac (Android mutes the phone's own speaker while it is being
+captured). The sidebar carries battery level, screen-off mirroring, clipboard paste and the three
 navigation buttons; a mirror window gets its own **Device** menu:
 
 | Shortcut | Action |
@@ -50,6 +51,7 @@ navigation buttons; a mirror window gets its own **Device** menu:
 | `⌘P` | Power |
 | `⌘↑` / `⌘↓` | Volume up / down |
 | `⌥⌘P` | Play / pause |
+| `⌥⌘M` | Mute audio |
 | `⌘M` | Menu |
 | `⌘R` | Rotate |
 

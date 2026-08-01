@@ -50,6 +50,8 @@ contextBridge.exposeInMainWorld('api', {
 		onAction: subscribe('mirror:action'),
 		onReady: subscribe('mirror:ready'),
 		onPacket: subscribe('mirror:packet'),
+		onAudioReady: subscribe('mirror:audio-ready'),
+		onAudio: subscribe('mirror:audio'),
 		onClosed: subscribe('mirror:closed')
 	}
 })

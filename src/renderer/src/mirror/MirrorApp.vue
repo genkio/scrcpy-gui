@@ -186,6 +186,7 @@ import {
 	WebGLVideoFrameRenderer
 } from '@yume-chan/scrcpy-decoder-webcodecs'
 import { MotionAction, isTypingKey, keyCodeFor } from './keys'
+import { PcmPlayer } from './audio'
 
 const BEZEL = 10
 
@@ -199,6 +200,7 @@ const MENU_ITEMS = [
 	{ key: 'volumeDown', action: 'nav', payload: { key: 'volumeDown' }, hint: '⌘↓' },
 	{ key: 'menuKey', action: 'nav', payload: { key: 'menu' }, hint: '⌘M' },
 	{ key: 'playPause', action: 'mediaPlayPause', hint: '⌥⌘P' },
+	{ key: 'mute', action: 'muteToggle', hint: '⌥⌘M' },
 	{ key: 'rotate', action: 'rotate', hint: '⌘R' }
 ]
 
@@ -257,13 +259,19 @@ export default {
 
 		// these two carry renderer state the menu cannot know (the toggle, the video
 		// size a swipe needs), so they go through the local methods
+		this.audioPlayer = null
+		this.muted = false
+
 		this.offAction = window.api.mirror.onAction(({ action, payload }) => {
 			if (action === 'screenOffToggle') return this.toggleScreen()
 			if (action === 'appDrawer') return this.openAppDrawer()
+			if (action === 'muteToggle') return this.toggleMute()
 			return this.control(action, payload)
 		})
 		this.offReady = window.api.mirror.onReady(this.onReady)
 		this.offPacket = window.api.mirror.onPacket(this.onPacket)
+		this.offAudioReady = window.api.mirror.onAudioReady(this.onAudioReady)
+		this.offAudio = window.api.mirror.onAudio(packet => this.audioPlayer?.push(packet))
 		this.offClosed = window.api.mirror.onClosed(({ reason }) => {
 			this.status = this.$t('mirror.disconnected', { reason })
 			this.failed = true
@@ -286,8 +294,11 @@ export default {
 		this.offAction?.()
 		this.offReady?.()
 		this.offPacket?.()
+		this.offAudioReady?.()
+		this.offAudio?.()
 		this.offClosed?.()
 		this.teardownDecoder()
+		this.teardownAudio()
 	},
 	methods: {
 		async connect() {
@@ -343,6 +354,26 @@ export default {
 			}
 			this.writer = null
 			this.decoder = null
+		},
+		async onAudioReady({ sampleRate, channels }) {
+			this.teardownAudio()
+			const player = new PcmPlayer()
+			try {
+				await player.start({ sampleRate, channels })
+			} catch (error) {
+				console.error('[mirror] audio setup failed:', error?.message ?? error)
+				return
+			}
+			player.setMuted(this.muted)
+			this.audioPlayer = player
+		},
+		toggleMute() {
+			this.muted = !this.muted
+			this.audioPlayer?.setMuted(this.muted)
+		},
+		teardownAudio() {
+			this.audioPlayer?.stop()
+			this.audioPlayer = null
 		},
 		async control(action, payload = {}) {
 			try {
@@ -444,6 +475,7 @@ export default {
 		},
 		runMenu(item) {
 			this.menuOpen = false
+			if (item.action === 'muteToggle') return this.toggleMute()
 			this.control(item.action, item.payload ?? {})
 		},
 		async pollBattery() {

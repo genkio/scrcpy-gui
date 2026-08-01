@@ -240,6 +240,7 @@ export default {
 		volumeDown: '音量減',
 		menuKey: '選單鍵',
 		playPause: '播放 / 暫停',
+		mute: '靜音',
 		rotate: '旋轉螢幕'
 	},
 	titleBar: {

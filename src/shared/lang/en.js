@@ -234,6 +234,7 @@ export default {
 		volumeDown: 'Volume down',
 		menuKey: 'Menu',
 		playPause: 'Play / pause',
+		mute: 'Mute audio',
 		rotate: 'Rotate'
 	},
 	titleBar: {

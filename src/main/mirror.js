@@ -24,6 +24,10 @@ const DEVICE_SERVER_PATH = '/data/local/tmp/scrcpy-server-scrcpygui.jar'
 const KEY_WAKEUP = 224
 const KEY_ALL_APPS = 284
 
+// scrcpy's raw audio codec captures at a fixed 48 kHz stereo s16le
+const AUDIO_SAMPLE_RATE = 48000
+const AUDIO_CHANNELS = 2
+
 // a click landing this long after the previous input may be hitting a sleeping phone
 const WAKE_IDLE = 3000
 const HOME_SETTLE = 350
@@ -92,7 +96,9 @@ export class MirrorSession {
 		const options = new AdbScrcpyOptionsLatest(
 			{
 				video: true,
-				audio: false,
+				audio: true,
+				// raw skips a decoder on the Mac side; the bandwidth (192 kB/s) is noise next to video
+				audioCodec: 'raw',
 				control: true,
 				videoCodec: 'h264',
 				maxSize,
@@ -151,7 +157,37 @@ export class MirrorSession {
 		})
 
 		this.#pumpVideo(video.stream)
+		this.#pumpAudio()
 		return { width: video.metadata.width ?? 0, height: video.metadata.height ?? 0 }
+	}
+
+	// audio is best-effort: a device that cannot capture it (Android 10 and older) reports
+	// "errored" and the mirror carries on video-only
+	async #pumpAudio() {
+		try {
+			const audio = await this.#client.audioStream
+			if (!audio || audio.type !== 'success') {
+				if (audio) console.log(`[mirror ${this.#serial}] audio unavailable: ${audio.type}`)
+				return
+			}
+
+			this.#send('mirror:audio-ready', {
+				codec: audio.codec.optionValue,
+				sampleRate: AUDIO_SAMPLE_RATE,
+				channels: AUDIO_CHANNELS
+			})
+
+			await audio.stream.pipeTo(
+				new WritableStream({
+					write: packet => {
+						if (this.#stopped || packet.type !== 'data') return
+						this.#send('mirror:audio', packet.data)
+					}
+				})
+			)
+		} catch (error) {
+			if (!this.#stopped) console.error(`[mirror ${this.#serial}] audio failed:`, error)
+		}
 	}
 
 	async #pumpVideo(stream) {
