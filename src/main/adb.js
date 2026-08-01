@@ -18,7 +18,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 const withPort = ip => (ip.includes(':') ? ip : `${ip}:${DEFAULT_PORT}`)
 
-export const quoteShell = value => `'${value.replaceAll('\'', `'\"'\"'`)}'`
+export const quoteShell = value => `'${value.replaceAll("'", '\'"\'"\'')}'`
 
 const normalizeUserId = userId => {
 	const normalized = Number(userId)

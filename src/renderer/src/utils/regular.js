@@ -1,7 +1,7 @@
 const Regular = (function () {
 	const rules = {
 		email(str) {
-			return (/^([A-Za-z0-9_\-\.\u4e00-\u9fa5])+\@([A-Za-z0-9_\-\.])+\.([A-Za-z]{2,8})$/).test(str)
+			return (/^([A-Za-z0-9_\-.\u4e00-\u9fa5])+@([A-Za-z0-9_\-.])+\.([A-Za-z]{2,8})$/).test(str)
 		},
 		number(str) {
 			return (/^[0-9]$/).test(str)

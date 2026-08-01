@@ -14,9 +14,11 @@ npm run build        # compile main/preload/renderer into out/
 npm run pack:mac     # release/mac-<arch>/ScrcpyGui.app, runnable in place
 npm run dist:mac:all # zip + dmg for arm64 and x64 (release artifacts)
 npm run fetch:server # refresh resources/scrcpy-server (see version pinning below)
+npm run lint         # ESLint flat config: correctness rules + tabs/no-semicolons/single-quotes
 ```
 
-There is no linter or test suite. Verification is done by running the app against a real device.
+There is no test suite. Verification is done by running the app against a real device. GitHub
+Actions (`.github/workflows/build.yml`) lints and builds every push to master.
 
 ## Layout
 
@@ -225,13 +227,10 @@ after any formula verification, or `rm` the symlink to deliberately run the rele
   resume leg was verified at the stock 80% cap, not across a real 40% to 80% cycle.
 - SMS forwarding is session-only like battery care (only the address persists, in the renderer's
   localStorage under `forwardAddress`), watches the Owner (user 0) inbox only, and covers real SMS
-  only — RCS never appears in `content://sms`. The config flow, toggle, baseline query, and
-  reload-resync were verified against the Pixel; an actual delivery (test send plus a real inbound
-  SMS) has not been exercised yet, and the first send still needs the one-time macOS Automation
-  grant.
+  only — RCS never appears in `content://sms`. Verified end to end against the Pixel, including
+  real inbound deliveries; a fresh Mac still needs the one-time macOS Automation grant on the
+  first send.
 - Battery care and SMS forwarding auto re-enable when a replugged device reappears: the renderer
   keeps a session-only per-serial intent map (`careIntent` in `Management.vue`), updated on every
   toggle and rebuilt from the running watchers on reload. It survives unplug but deliberately not an
   app restart, and a renderer reload while the phone is unplugged forgets the intent for it.
-- `.travis.yml` and `appveyor.yml` are dead 2019 CI configs.
-- No linter since the ESLint 4 setup was dropped in the v2 rewrite.

@@ -75,14 +75,14 @@ export const mirrorMenu = (locale, window) => {
 				item.type
 					? item
 					: {
-							label: t(`mirror.${item.key}`),
-							accelerator: item.accelerator,
-							click: () =>
-								window.webContents.send('mirror:action', {
-									action: item.action,
-									payload: item.payload ?? {}
-								})
-						}
+						label: t(`mirror.${item.key}`),
+						accelerator: item.accelerator,
+						click: () =>
+							window.webContents.send('mirror:action', {
+								action: item.action,
+								payload: item.payload ?? {}
+							})
+					}
 			)
 		},
 		{

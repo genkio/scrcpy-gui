@@ -162,6 +162,7 @@ Keyboard and mouse shortcuts belong to scrcpy itself and are listed in
 ```sh
 npm start          # dev mode with hot reload
 npm run build      # compile main, preload and renderer into out/
+npm run lint       # ESLint
 ./bin/scrcpy-gui   # build, then launch from the checkout
 ```
 
